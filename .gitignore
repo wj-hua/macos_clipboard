@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Xcode
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+
+# Profiling output
+*.profraw
+
+# Local diagnostic residue
+:-

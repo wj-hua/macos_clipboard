@@ -1,0 +1,415 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* AppDelegate.swift */; };
+		A1000000000000000000000E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* main.swift */; };
+		A10000000000000000000002 /* PasteItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* PasteItem.swift */; };
+		A10000000000000000000003 /* PasteItemStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* PasteItemStore.swift */; };
+		A10000000000000000000004 /* PasteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000004 /* PasteService.swift */; };
+		A10000000000000000000005 /* GlobalHotKeyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000005 /* GlobalHotKeyController.swift */; };
+		A10000000000000000000006 /* ClipboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* ClipboardViewModel.swift */; };
+		A10000000000000000000007 /* ClipboardPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* ClipboardPanelView.swift */; };
+		A10000000000000000000008 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* PanelController.swift */; };
+		A10000000000000000000009 /* PasteItemStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* PasteItemStoreTests.swift */; };
+		A1000000000000000000000A /* ClipboardViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* ClipboardViewModelTests.swift */; };
+		A10000000000000000000010 /* PasteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* PasteServiceTests.swift */; };
+		A1000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10000000000000000000001 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B1000000000000000000000E /* main.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B10000000000000000000002 /* PasteItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteItem.swift; sourceTree = "<group>"; };
+		B10000000000000000000003 /* PasteItemStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteItemStore.swift; sourceTree = "<group>"; };
+		B10000000000000000000004 /* PasteService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteService.swift; sourceTree = "<group>"; };
+		B10000000000000000000005 /* GlobalHotKeyController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyController.swift; sourceTree = "<group>"; };
+		B10000000000000000000006 /* ClipboardViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardViewModel.swift; sourceTree = "<group>"; };
+		B10000000000000000000007 /* ClipboardPanelView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardPanelView.swift; sourceTree = "<group>"; };
+		B10000000000000000000008 /* PanelController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
+		B10000000000000000000009 /* PasteItemStoreTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteItemStoreTests.swift; sourceTree = "<group>"; };
+		B1000000000000000000000A /* ClipboardViewModelTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardViewModelTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000010 /* PasteServiceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteServiceTests.swift; sourceTree = "<group>"; };
+		B1000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B1000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1000000000000000000000C /* CommonClipboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CommonClipboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000000000000000000000D /* CommonClipboardTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CommonClipboardTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D10000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C10000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000002 /* CommonClipboard */,
+				C10000000000000000000008 /* CommonClipboardTests */,
+				C10000000000000000000009 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C10000000000000000000002 /* CommonClipboard */ = {
+			isa = PBXGroup;
+			children = (
+				B1000000000000000000000E /* main.swift */,
+				B10000000000000000000001 /* AppDelegate.swift */,
+				B10000000000000000000006 /* ClipboardViewModel.swift */,
+				C10000000000000000000003 /* Models */,
+				C10000000000000000000004 /* Stores */,
+				C10000000000000000000005 /* Services */,
+				C10000000000000000000006 /* UI */,
+				B1000000000000000000000B /* Info.plist */,
+				B1000000000000000000000F /* Assets.xcassets */,
+			);
+			path = CommonClipboard;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000003 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000002 /* PasteItem.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000004 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000003 /* PasteItemStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000005 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000004 /* PasteService.swift */,
+				B10000000000000000000005 /* GlobalHotKeyController.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000006 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000007 /* ClipboardPanelView.swift */,
+				B10000000000000000000008 /* PanelController.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000008 /* CommonClipboardTests */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000009 /* PasteItemStoreTests.swift */,
+				B1000000000000000000000A /* ClipboardViewModelTests.swift */,
+				B10000000000000000000010 /* PasteServiceTests.swift */,
+			);
+			path = CommonClipboardTests;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000009 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B1000000000000000000000C /* CommonClipboard.app */,
+				B1000000000000000000000D /* CommonClipboardTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E10000000000000000000001 /* CommonClipboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000002 /* Build configuration list for PBXNativeTarget "CommonClipboard" */;
+			buildPhases = (
+				D10000000000000000000003 /* Sources */,
+				D10000000000000000000001 /* Frameworks */,
+				D10000000000000000000004 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CommonClipboard;
+			productName = CommonClipboard;
+			productReference = B1000000000000000000000C /* CommonClipboard.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E10000000000000000000002 /* CommonClipboardTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000003 /* Build configuration list for PBXNativeTarget "CommonClipboardTests" */;
+			buildPhases = (
+				D10000000000000000000005 /* Sources */,
+				D10000000000000000000002 /* Frameworks */,
+				D10000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				G10000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = CommonClipboardTests;
+			productName = CommonClipboardTests;
+			productReference = B1000000000000000000000D /* CommonClipboardTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C1000000000000000000000A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					E10000000000000000000001 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					E10000000000000000000002 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = E10000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = F10000000000000000000001 /* Build configuration list for PBXProject "CommonClipboard" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C10000000000000000000001;
+			productRefGroup = C10000000000000000000009 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E10000000000000000000001 /* CommonClipboard */,
+				E10000000000000000000002 /* CommonClipboardTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D10000000000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000000000000000000000F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D10000000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000000000000000000000E /* main.swift in Sources */,
+				A10000000000000000000001 /* AppDelegate.swift in Sources */,
+				A10000000000000000000002 /* PasteItem.swift in Sources */,
+				A10000000000000000000003 /* PasteItemStore.swift in Sources */,
+				A10000000000000000000004 /* PasteService.swift in Sources */,
+				A10000000000000000000005 /* GlobalHotKeyController.swift in Sources */,
+				A10000000000000000000006 /* ClipboardViewModel.swift in Sources */,
+				A10000000000000000000007 /* ClipboardPanelView.swift in Sources */,
+				A10000000000000000000008 /* PanelController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000009 /* PasteItemStoreTests.swift in Sources */,
+				A1000000000000000000000A /* ClipboardViewModelTests.swift in Sources */,
+				A10000000000000000000010 /* PasteServiceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		G10000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E10000000000000000000001 /* CommonClipboard */;
+			targetProxy = G10000000000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		G10000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C1000000000000000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E10000000000000000000001;
+			remoteInfo = CommonClipboard;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		F20000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F20000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F20000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 75ZF4LDHVR;
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_FILE = CommonClipboard/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mino.CommonClipboard;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F20000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 75ZF4LDHVR;
+				INFOPLIST_FILE = CommonClipboard/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mino.CommonClipboard;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F20000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mino.CommonClipboardTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CommonClipboard.app/Contents/MacOS/CommonClipboard";
+			};
+			name = Debug;
+		};
+		F20000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mino.CommonClipboardTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CommonClipboard.app/Contents/MacOS/CommonClipboard";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F10000000000000000000001 /* Build configuration list for PBXProject "CommonClipboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20000000000000000000001 /* Debug */,
+				F20000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000002 /* Build configuration list for PBXNativeTarget "CommonClipboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20000000000000000000003 /* Debug */,
+				F20000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000003 /* Build configuration list for PBXNativeTarget "CommonClipboardTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F20000000000000000000005 /* Debug */,
+				F20000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C1000000000000000000000A /* Project object */;
+}
