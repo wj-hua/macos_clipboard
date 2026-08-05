@@ -23,6 +23,37 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedItemID, second.id)
     }
 
+    func testArrowSelectionSwitchesTagsAndStopsAtTagBoundaries() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let defaultItem = try XCTUnwrap(store.add(text: "默认文本"))
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let workItem = try XCTUnwrap(store.add(text: "工作文本", to: workTag.id))
+        let personalTag = try XCTUnwrap(store.addTag(name: "个人"))
+        let personalItem = try XCTUnwrap(store.add(text: "个人文本", to: personalTag.id))
+        let service = MockPasteService()
+        let viewModel = ClipboardViewModel(store: store, pasteService: service)
+
+        viewModel.moveTagSelection(by: -1)
+        XCTAssertEqual(viewModel.selectedTagID, PasteTag.defaultID)
+        XCTAssertEqual(viewModel.selectedItemID, defaultItem.id)
+
+        viewModel.moveTagSelection(by: 1)
+        XCTAssertEqual(viewModel.selectedTagID, workTag.id)
+        XCTAssertEqual(viewModel.selectedItemID, workItem.id)
+
+        viewModel.moveTagSelection(by: 1)
+        XCTAssertEqual(viewModel.selectedTagID, personalTag.id)
+        XCTAssertEqual(viewModel.selectedItemID, personalItem.id)
+
+        viewModel.moveTagSelection(by: 1)
+        XCTAssertEqual(viewModel.selectedTagID, personalTag.id)
+        XCTAssertEqual(viewModel.selectedItemID, personalItem.id)
+
+        viewModel.moveTagSelection(by: -1)
+        XCTAssertEqual(viewModel.selectedTagID, workTag.id)
+        XCTAssertEqual(viewModel.selectedItemID, workItem.id)
+    }
+
     func testSelectItemByIndexSelectsTheCorrespondingItem() throws {
         let store = PasteItemStore(fileURL: temporaryFileURL())
         let first = try XCTUnwrap(store.add(text: "第一条"))

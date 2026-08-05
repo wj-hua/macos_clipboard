@@ -1,10 +1,14 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 struct ClipboardPanelView: View {
     @ObservedObject var viewModel: ClipboardViewModel
     let onClose: () -> Void
+    let onWindowDragChanged: (_ time: Date) -> Void
+    let onWindowDragEnded: () -> Void
 
+    @State private var windowDragExclusions: [CGRect] = []
     @State private var isDeleteConfirmationPresented = false
     @State private var draggedItemID: UUID?
     @State private var draggedTagID: UUID?
@@ -21,8 +25,11 @@ struct ClipboardPanelView: View {
     static let listRowSpacing: CGFloat = 6
     static let minimumListRows = 5
     static let maximumListRows = 10
+    fileprivate static let panelCoordinateSpace = "ClipboardPanel"
+
     private static let listHeaderHeight: CGFloat = 74
     private static let tagBarHeight: CGFloat = 56
+    private static let tagAddButtonSize: CGFloat = 40
     private static let listFooterHeight: CGFloat = 60
     private static let editorPanelHeight: CGFloat = 420
 
@@ -62,6 +69,10 @@ struct ClipboardPanelView: View {
         Self.listRowSlotHeight * CGFloat(Self.visibleListRows(for: viewModel.items.count))
     }
 
+    private func isWindowDragExcluded(_ location: CGPoint) -> Bool {
+        windowDragExclusions.contains { $0.contains(location) }
+    }
+
     var body: some View {
         ZStack {
             panelBackdrop
@@ -76,6 +87,29 @@ struct ClipboardPanelView: View {
             }
         }
         .frame(width: Self.panelWidth, height: panelHeight)
+        // The panel itself is the hit-test surface. Empty glass areas must still
+        // receive the mouse event instead of letting it fall through to the app
+        // underneath.
+        .contentShape(Rectangle())
+        .onPreferenceChange(WindowDragExclusionPreferenceKey.self) { exclusions in
+            windowDragExclusions = exclusions
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.panelCoordinateSpace))
+                .onChanged { value in
+                    // 手势按下的位置一旦落在按钮、列表或文本编辑器上，就完全不上报，
+                    // 让这些控件保留自己的点击与拖拽语义。
+                    guard !isWindowDragExcluded(value.startLocation) else { return }
+
+                    onWindowDragChanged(value.time)
+                }
+                .onEnded { _ in
+                    onWindowDragEnded()
+                }
+        )
+        // 命名坐标系要包住手势本身，手势和上报排除矩形的 GeometryReader 才会落在同一个
+        // 空间里 —— 命名空间只对其后代可见。
+        .coordinateSpace(name: Self.panelCoordinateSpace)
         .clipShape(RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: panelCornerRadius, style: .continuous)
@@ -251,10 +285,6 @@ struct ClipboardPanelView: View {
                 HStack(spacing: 8) {
                     ForEach(viewModel.tags) { tag in
                         tagChip(for: tag)
-                            .onDrag {
-                                draggedTagID = tag.id
-                                return NSItemProvider(object: tag.id.uuidString as NSString)
-                            }
                             .onDrop(
                                 of: [.text],
                                 delegate: TagDropDelegate(
@@ -272,20 +302,22 @@ struct ClipboardPanelView: View {
             Button {
                 beginAddingTag()
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .bold))
-                    .frame(width: 28, height: 28)
+                ZStack {
+                    Circle()
+                        .fill(ClipboardTheme.mint.opacity(0.12))
+                        .overlay {
+                            Circle()
+                                .stroke(ClipboardTheme.mint.opacity(0.22), lineWidth: 1)
+                        }
+
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .bold))
+                }
+                .foregroundStyle(ClipboardTheme.mintDeep)
+                .frame(width: Self.tagAddButtonSize, height: Self.tagAddButtonSize)
+                .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(ClipboardTheme.mintDeep)
-            .background {
-                Circle()
-                    .fill(ClipboardTheme.mint.opacity(0.12))
-                    .overlay {
-                        Circle()
-                            .stroke(ClipboardTheme.mint.opacity(0.22), lineWidth: 1)
-                    }
-            }
             .help("添加标签")
         }
         .frame(height: Self.tagBarHeight)
@@ -304,6 +336,8 @@ struct ClipboardPanelView: View {
                         .frame(height: 1)
                 }
         }
+        // 整条标签栏都让给标签自己的长按拖动排序，窗口拖动不在这里接管。
+        .excludedFromWindowDrag()
     }
 
     private func tagChip(for tag: PasteTag) -> some View {
@@ -325,8 +359,14 @@ struct ClipboardPanelView: View {
                 .padding(.leading, 10)
                 .padding(.trailing, tag.isDefault ? 10 : 7)
                 .frame(height: 30)
+                // 让整块胶囊区域可点，而不是只有图标和文字的实际像素。
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .onDrag {
+                draggedTagID = tag.id
+                return NSItemProvider(object: tag.id.uuidString as NSString)
+            }
 
             if !tag.isDefault {
                 Rectangle()
@@ -339,6 +379,7 @@ struct ClipboardPanelView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .bold))
                         .frame(width: 25, height: 30)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(isSelected ? ClipboardTheme.mintDeep.opacity(0.78) : .secondary)
@@ -445,6 +486,7 @@ struct ClipboardPanelView: View {
             }
         }
         .frame(minHeight: listAreaHeight)
+        .excludedFromWindowDrag()
     }
 
     private var footer: some View {
@@ -537,6 +579,7 @@ struct ClipboardPanelView: View {
         .buttonStyle(.plain)
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.42 : 1)
+        .excludedFromWindowDrag()
     }
 
     private var emptyState: some View {
@@ -572,6 +615,7 @@ struct ClipboardPanelView: View {
                     .frame(height: 34)
             }
             .buttonStyle(.borderedProminent)
+            .excludedFromWindowDrag()
 
             Spacer()
         }
@@ -602,7 +646,8 @@ struct ClipboardPanelView: View {
                 ZStack(alignment: .topLeading) {
                     ClipboardTextEditor(
                         text: $viewModel.draftText,
-                        isComposing: $isTextEditorComposing
+                        isComposing: $isTextEditorComposing,
+                        onSubmit: viewModel.saveDraft
                     )
 
                     if viewModel.draftText.isEmpty && !isTextEditorComposing {
@@ -629,12 +674,13 @@ struct ClipboardPanelView: View {
                                 .stroke(ClipboardTheme.mint.opacity(0.20), lineWidth: 1)
                         }
                 }
+                .excludedFromWindowDrag()
 
                 HStack {
                     Image(systemName: "info.circle")
                         .font(.system(size: 12, weight: .semibold))
 
-                    Text("保存后可在列表中选择，并按回车粘贴")
+                    Text("回车保存，Shift + 回车或 Command + 回车换行")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
 
                     Spacer()
@@ -657,6 +703,7 @@ struct ClipboardPanelView: View {
                     viewModel.cancelEditing()
                 }
                 .buttonStyle(.bordered)
+                .excludedFromWindowDrag()
 
                 Spacer()
 
@@ -667,6 +714,7 @@ struct ClipboardPanelView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!viewModel.canSaveDraft)
+                .excludedFromWindowDrag()
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
@@ -687,6 +735,7 @@ struct ClipboardPanelView: View {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 13, weight: .bold))
                         .frame(width: 34, height: 34)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .background {
@@ -698,6 +747,7 @@ struct ClipboardPanelView: View {
                         }
                 }
                 .help("返回列表")
+                .excludedFromWindowDrag()
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 13, style: .continuous)
@@ -758,6 +808,7 @@ struct ClipboardPanelView: View {
                             .font(.system(size: 11, weight: .semibold, design: .rounded))
                             .padding(.horizontal, 9)
                             .frame(height: 30)
+                            .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(ClipboardTheme.mintDeep.opacity(0.82))
@@ -770,6 +821,7 @@ struct ClipboardPanelView: View {
                             }
                     }
                     .help("添加标签")
+                    .excludedFromWindowDrag()
                 }
 
                 HStack(spacing: 4) {
@@ -799,6 +851,7 @@ struct ClipboardPanelView: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .bold))
                     .frame(width: 32, height: 32)
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .background {
@@ -810,6 +863,7 @@ struct ClipboardPanelView: View {
                     }
             }
             .help("关闭")
+            .excludedFromWindowDrag()
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
@@ -823,9 +877,34 @@ struct ClipboardPanelView: View {
     }
 }
 
+/// 面板内不参与「长按拖动窗口」的区域，由控件自己按实际布局上报，
+/// 避免把按钮位置写成常量后随布局漂移。
+private struct WindowDragExclusionPreferenceKey: PreferenceKey {
+    static var defaultValue: [CGRect] { [] }
+
+    static func reduce(value: inout [CGRect], nextValue: () -> [CGRect]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+private extension View {
+    func excludedFromWindowDrag() -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(
+                        key: WindowDragExclusionPreferenceKey.self,
+                        value: [proxy.frame(in: .named(ClipboardPanelView.panelCoordinateSpace))]
+                    )
+            }
+        }
+    }
+}
+
 private struct ClipboardTextEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var isComposing: Bool
+    let onSubmit: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -841,6 +920,7 @@ private struct ClipboardTextEditor: NSViewRepresentable {
 
         let textView = ClipboardNSTextView()
         textView.delegate = context.coordinator
+        textView.onSubmit = onSubmit
         textView.compositionStateDidChange = { [weak coordinator = context.coordinator] isComposing in
             DispatchQueue.main.async {
                 coordinator?.updateCompositionState(isComposing)
@@ -911,6 +991,7 @@ private struct ClipboardTextEditor: NSViewRepresentable {
 
 private final class ClipboardNSTextView: NSTextView {
     var compositionStateDidChange: ((Bool) -> Void)?
+    var onSubmit: (() -> Void)?
     private(set) var isComposing = false
 
     override func setMarkedText(
@@ -957,7 +1038,56 @@ private final class ClipboardNSTextView: NSTextView {
         insertText(text, replacementRange: selectedRange())
     }
 
+    override func keyDown(with event: NSEvent) {
+        let isReturnKey = event.keyCode == UInt16(kVK_Return)
+            || event.keyCode == UInt16(kVK_ANSI_KeypadEnter)
+        guard isReturnKey else {
+            super.keyDown(with: event)
+            return
+        }
+
+        // Let the input method commit its marked text before handling Return.
+        guard !isComposing else {
+            super.keyDown(with: event)
+            return
+        }
+
+        let textInputModifiers = event.modifierFlags.intersection([
+            .shift,
+            .control,
+            .option,
+            .command
+        ])
+        if textInputModifiers.isEmpty {
+            onSubmit?()
+        } else if textInputModifiers.contains(.shift) || textInputModifiers.contains(.command) {
+            insertText("\n", replacementRange: selectedRange())
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let isReturnKey = event.keyCode == UInt16(kVK_Return)
+            || event.keyCode == UInt16(kVK_ANSI_KeypadEnter)
+        let textInputModifiers = event.modifierFlags.intersection([
+            .shift,
+            .control,
+            .option,
+            .command
+        ])
+        if isReturnKey, !isComposing {
+            if textInputModifiers.isEmpty {
+                onSubmit?()
+                return true
+            }
+
+            if textInputModifiers.contains(.shift) || textInputModifiers.contains(.command) {
+                insertText("\n", replacementRange: selectedRange())
+                return true
+            }
+        }
+
         guard event.modifierFlags.contains(.command),
               let characters = event.charactersIgnoringModifiers?.lowercased() else {
             return super.performKeyEquivalent(with: event)

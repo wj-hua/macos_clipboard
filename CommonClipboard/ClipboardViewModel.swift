@@ -109,6 +109,20 @@ final class ClipboardViewModel: ObservableObject {
         selectedItemID = items.first?.id
     }
 
+    func moveTagSelection(by offset: Int) {
+        guard let selectedTagID,
+              let currentIndex = tags.firstIndex(where: { $0.id == selectedTagID }) else {
+            guard let firstTag = tags.first else { return }
+            selectTag(withID: firstTag.id)
+            return
+        }
+
+        let nextIndex = min(max(currentIndex + offset, 0), tags.count - 1)
+        guard nextIndex != currentIndex else { return }
+
+        selectTag(withID: tags[nextIndex].id)
+    }
+
     @discardableResult
     func addTag(name: String) -> Bool {
         guard let tag = store.addTag(name: name) else { return false }
