@@ -6,17 +6,16 @@ final class WindowDragRecognizerTests: XCTestCase {
     private let startFrame = CGRect(x: 100, y: 200, width: 500, height: 400)
     private let pressPoint = CGPoint(x: 300, y: 400)
 
-    func testHoldingLongEnoughMovesTheWindowByThePointerOffset() {
-        var recognizer = WindowDragRecognizer(minimumPressDuration: 0.4, movementTolerance: 5)
+    func testDraggingMovesTheWindowByThePointerOffsetImmediately() {
+        var recognizer = WindowDragRecognizer()
 
         XCTAssertNil(
-            recognizer.update(pointerLocation: pressPoint, timestamp: 0, windowFrame: startFrame)
+            recognizer.update(pointerLocation: pressPoint, windowFrame: startFrame)
         )
-        XCTAssertFalse(recognizer.isDragging)
+        XCTAssertTrue(recognizer.isDragging)
 
         let origin = recognizer.update(
             pointerLocation: CGPoint(x: pressPoint.x + 30, y: pressPoint.y - 20),
-            timestamp: 0.5,
             windowFrame: startFrame
         )
 
@@ -28,9 +27,9 @@ final class WindowDragRecognizerTests: XCTestCase {
     /// 若改用窗口坐标系的 translation，窗口移动后同一鼠标位置算出的位移会缩回去，
     /// 窗口就会在两个位置之间逐帧抖动。
     func testDraggingStaysStableWhileTheWindowKeepsMovingUnderTheCursor() throws {
-        var recognizer = WindowDragRecognizer(minimumPressDuration: 0.4, movementTolerance: 5)
+        var recognizer = WindowDragRecognizer()
 
-        _ = recognizer.update(pointerLocation: pressPoint, timestamp: 0, windowFrame: startFrame)
+        _ = recognizer.update(pointerLocation: pressPoint, windowFrame: startFrame)
 
         var windowFrame = startFrame
         var origins: [CGPoint] = []
@@ -41,7 +40,6 @@ final class WindowDragRecognizerTests: XCTestCase {
             let origin = try XCTUnwrap(
                 recognizer.update(
                     pointerLocation: pointer,
-                    timestamp: 0.5 + Double(step) * 0.05,
                     windowFrame: windowFrame
                 )
             )
@@ -55,79 +53,44 @@ final class WindowDragRecognizerTests: XCTestCase {
         // 鼠标停住不动时，窗口必须停在原地，而不是弹回按下时的位置。
         let held = recognizer.update(
             pointerLocation: CGPoint(x: pressPoint.x + 40, y: pressPoint.y),
-            timestamp: 0.8,
             windowFrame: windowFrame
         )
         XCTAssertEqual(held, CGPoint(x: 140, y: 200))
     }
 
-    func testMovingBeforeTheLongPressCompletesCancelsTheWholePress() {
-        var recognizer = WindowDragRecognizer(minimumPressDuration: 0.4, movementTolerance: 5)
+    func testSmallMovementStartsDraggingWithoutALongPress() {
+        var recognizer = WindowDragRecognizer()
 
         XCTAssertNil(
-            recognizer.update(pointerLocation: pressPoint, timestamp: 0, windowFrame: startFrame)
-        )
-        XCTAssertNil(
-            recognizer.update(
-                pointerLocation: CGPoint(x: pressPoint.x + 20, y: pressPoint.y),
-                timestamp: 0.1,
-                windowFrame: startFrame
-            )
-        )
-
-        // 一旦被判定成快速拖拽，后续即使超过长按时长也不再接管窗口。
-        XCTAssertNil(
-            recognizer.update(
-                pointerLocation: CGPoint(x: pressPoint.x + 60, y: pressPoint.y),
-                timestamp: 0.9,
-                windowFrame: startFrame
-            )
-        )
-        XCTAssertFalse(recognizer.isDragging)
-    }
-
-    func testJitterWithinToleranceKeepsTheLongPressAlive() {
-        var recognizer = WindowDragRecognizer(minimumPressDuration: 0.4, movementTolerance: 5)
-
-        XCTAssertNil(
-            recognizer.update(pointerLocation: pressPoint, timestamp: 0, windowFrame: startFrame)
-        )
-        XCTAssertNil(
-            recognizer.update(
-                pointerLocation: CGPoint(x: pressPoint.x + 3, y: pressPoint.y),
-                timestamp: 0.1,
-                windowFrame: startFrame
-            )
+            recognizer.update(pointerLocation: pressPoint, windowFrame: startFrame)
         )
 
         let origin = recognizer.update(
-            pointerLocation: CGPoint(x: pressPoint.x + 3, y: pressPoint.y),
-            timestamp: 0.45,
+            pointerLocation: CGPoint(x: pressPoint.x + 2, y: pressPoint.y - 1),
             windowFrame: startFrame
         )
 
-        XCTAssertEqual(origin, CGPoint(x: 103, y: 200))
+        XCTAssertEqual(origin, CGPoint(x: 102, y: 199))
+        XCTAssertTrue(recognizer.isDragging)
     }
 
-    func testEndingThePressAllowsANewLongPressToStart() {
-        var recognizer = WindowDragRecognizer(minimumPressDuration: 0.4, movementTolerance: 5)
+    func testEndingTheDragAllowsANewDragToStart() {
+        var recognizer = WindowDragRecognizer()
 
-        _ = recognizer.update(pointerLocation: pressPoint, timestamp: 0, windowFrame: startFrame)
+        _ = recognizer.update(pointerLocation: pressPoint, windowFrame: startFrame)
         _ = recognizer.update(
             pointerLocation: CGPoint(x: pressPoint.x + 20, y: pressPoint.y),
-            timestamp: 0.1,
             windowFrame: startFrame
         )
         recognizer.end()
 
         XCTAssertFalse(recognizer.isDragging)
         XCTAssertNil(
-            recognizer.update(pointerLocation: pressPoint, timestamp: 5, windowFrame: startFrame)
+            recognizer.update(pointerLocation: pressPoint, windowFrame: startFrame)
         )
 
         let origin = recognizer.update(
             pointerLocation: CGPoint(x: pressPoint.x, y: pressPoint.y - 25),
-            timestamp: 5.6,
             windowFrame: startFrame
         )
 

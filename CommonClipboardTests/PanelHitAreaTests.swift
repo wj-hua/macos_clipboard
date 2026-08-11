@@ -123,11 +123,11 @@ final class PanelHitAreaTests: XCTestCase {
             backing: .buffered,
             defer: false
         )
-        window.contentViewController = NSHostingController(
+        window.contentView = PanelHostingView(
             rootView: ClipboardPanelView(
                 viewModel: viewModel,
                 onClose: onClose,
-                onWindowDragChanged: { _ in recorder.count += 1 },
+                onWindowDragChanged: { recorder.count += 1 },
                 onWindowDragEnded: {}
             )
         )
@@ -135,8 +135,8 @@ final class PanelHitAreaTests: XCTestCase {
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
 
-        // 见 PanelDragExclusionTests：测试环境里宿主 App 抢不到焦点，需要手动置上 key 状态，
-        // 否则 AppKit 的 first-mouse 规则会吞掉空白背景上的 mouseDown。
+        // 见 PanelDragExclusionTests：这里使用与生产环境相同的 `PanelHostingView`，
+        // 按钮命中测试本身则需要窗口处于 key 状态。
         window.becomeKey()
 
         pumpEvents(for: 0.8)

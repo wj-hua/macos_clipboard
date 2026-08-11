@@ -26,12 +26,21 @@ final class PanelDragExclusionTests: XCTestCase {
 
     /// 正向对照：没有它的话，下面所有「不该拖动」的用例都可能因为事件根本没送达而假通过。
     func testPressingBlankChromeHandsTheGestureToTheWindowDrag() {
-        showPanel(itemCount: 5)
+        showPanel(itemCount: 5, forceKeyWindow: false)
 
         // 标题栏里的空白，既不是按钮也不是列表。
         press(at: CGPoint(x: 210, y: 34))
 
-        XCTAssertGreaterThan(recorder.count, 0, "空白区域应该可以长按拖动窗口")
+        XCTAssertGreaterThan(recorder.count, 0, "空白区域应该可以直接拖动窗口")
+    }
+
+    func testPanelHostingViewAcceptsFirstMouse() {
+        let hostingView = PanelHostingView(rootView: EmptyView())
+
+        XCTAssertTrue(
+            hostingView.acceptsFirstMouse(for: nil),
+            "非 key 面板的空白区域也必须接收第一次按压，不能让事件落到下方 App"
+        )
     }
 
     func testPressingTheAddButtonDoesNotStartAWindowDrag() {
@@ -91,6 +100,7 @@ final class PanelDragExclusionTests: XCTestCase {
         itemCount: Int,
         extraTagNames: [String] = [],
         startsInEditor: Bool = false,
+        forceKeyWindow: Bool = true,
         onClose: @escaping () -> Void = {}
     ) {
         let store = PasteItemStore(fileURL: temporaryFileURL())
@@ -126,11 +136,11 @@ final class PanelDragExclusionTests: XCTestCase {
             backing: .buffered,
             defer: false
         )
-        window.contentViewController = NSHostingController(
+        window.contentView = PanelHostingView(
             rootView: ClipboardPanelView(
                 viewModel: viewModel,
                 onClose: onClose,
-                onWindowDragChanged: { _ in recorder.count += 1 },
+                onWindowDragChanged: { recorder.count += 1 },
                 onWindowDragEnded: {}
             )
         )
@@ -138,11 +148,11 @@ final class PanelDragExclusionTests: XCTestCase {
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
 
-        // `xcodebuild test` 下宿主 App 抢不到焦点，`makeKey` 不足以让窗口真正成为 key window。
-        // 而 AppKit 的 first-mouse 规则会把非 key 窗口空白背景上的 mouseDown 直接吞掉
-        //（只有 `acceptsFirstMouse` 为真的交互控件才收得到），空白区域用例会永远为 0。
-        // `becomeKey()` 会把内部 key 状态置上，事件才会照常派发。
-        window.becomeKey()
+        // 空白区域的回归用例故意不强制 key，验证 `PanelHostingView` 能接收 first mouse。
+        // 其他用例需要检查按钮动作或 NSTextView 的 first responder，因此仍强制成为 key。
+        if forceKeyWindow {
+            window.becomeKey()
+        }
 
         // 等 SwiftUI 完成布局，并把各控件的排除矩形通过 preference 冒泡上来。
         pumpEvents(for: 0.8)

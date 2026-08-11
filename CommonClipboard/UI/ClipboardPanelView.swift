@@ -5,7 +5,7 @@ import SwiftUI
 struct ClipboardPanelView: View {
     @ObservedObject var viewModel: ClipboardViewModel
     let onClose: () -> Void
-    let onWindowDragChanged: (_ time: Date) -> Void
+    let onWindowDragChanged: () -> Void
     let onWindowDragEnded: () -> Void
 
     @State private var windowDragExclusions: [CGRect] = []
@@ -101,7 +101,7 @@ struct ClipboardPanelView: View {
                     // 让这些控件保留自己的点击与拖拽语义。
                     guard !isWindowDragExcluded(value.startLocation) else { return }
 
-                    onWindowDragChanged(value.time)
+                    onWindowDragChanged()
                 }
                 .onEnded { _ in
                     onWindowDragEnded()
