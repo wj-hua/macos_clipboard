@@ -17,6 +17,7 @@ struct ClipboardPanelView: View {
     @State private var tagToDelete: PasteTag?
     @State private var tagErrorMessage: String?
     @State private var isTextEditorComposing = false
+    @State private var isUsageHelpPresented = false
 
     private let panelCornerRadius: CGFloat = 24
 
@@ -27,7 +28,7 @@ struct ClipboardPanelView: View {
     static let maximumListRows = 10
     fileprivate static let panelCoordinateSpace = "ClipboardPanel"
 
-    private static let listHeaderHeight: CGFloat = 74
+    private static let listHeaderHeight: CGFloat = 50
     private static let tagBarHeight: CGFloat = 56
     private static let tagAddButtonSize: CGFloat = 40
     private static let listFooterHeight: CGFloat = 60
@@ -254,11 +255,7 @@ struct ClipboardPanelView: View {
 
     private var listView: some View {
         VStack(spacing: 0) {
-            header(
-                title: "常用粘贴板",
-                subtitle: "单击选择，⌥1–9 直接粘贴到当前应用",
-                showsListStatus: true
-            )
+            header(title: "常用粘贴板", showsTagButton: true)
 
             if viewModel.tags.count > 1 {
                 tagBar
@@ -509,24 +506,33 @@ struct ClipboardPanelView: View {
 
             Spacer(minLength: 8)
 
-            HStack(spacing: 6) {
-                Text("⌥")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                Text("空格")
+            Button {
+                withAnimation(.easeOut(duration: 0.16)) {
+                    isUsageHelpPresented.toggle()
+                }
+            } label: {
+                Label("使用说明", systemImage: "questionmark.circle.fill")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .frame(height: 36)
-            .background {
-                Capsule()
-                    .fill(ClipboardTheme.mint.opacity(0.08))
-                    .overlay {
+                    .foregroundStyle(ClipboardTheme.mintDeep)
+                    .padding(.horizontal, 12)
+                    .frame(height: 36)
+                    .background {
                         Capsule()
-                            .stroke(ClipboardTheme.mint.opacity(0.18), lineWidth: 1)
+                            .fill(ClipboardTheme.mint.opacity(0.12))
+                            .overlay {
+                                Capsule()
+                                    .stroke(ClipboardTheme.mint.opacity(0.24), lineWidth: 1)
+                            }
                     }
+                    .contentShape(Capsule())
             }
-            .help("全局快捷键")
+            .buttonStyle(.plain)
+            .onDisappear {
+                isUsageHelpPresented = false
+            }
+            .help("查看使用说明")
+            .accessibilityHint("显示常用粘贴板的操作说明")
+            .excludedFromWindowDrag()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -543,6 +549,70 @@ struct ClipboardPanelView: View {
                         .fill(ClipboardTheme.mint.opacity(0.20))
                         .frame(height: 1)
                 }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if isUsageHelpPresented {
+                usageHelpBubble
+                    .padding(.trailing, 16)
+                    .offset(y: -46)
+                    .transition(
+                        .opacity.combined(
+                            with: .scale(scale: 0.96, anchor: .bottomTrailing)
+                        )
+                    )
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private var usageHelpBubble: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("使用说明", systemImage: "questionmark.circle.fill")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(ClipboardTheme.mintDeep)
+
+            VStack(alignment: .leading, spacing: 7) {
+                usageHelpRow(shortcut: "⌥ 空格", description: "显示或隐藏面板")
+                usageHelpRow(shortcut: "单击", description: "选择常用文本")
+                usageHelpRow(shortcut: "双击 / ↩", description: "粘贴所选文本")
+                usageHelpRow(shortcut: "⌥ 1–9", description: "直接粘贴对应文本")
+                usageHelpRow(shortcut: "拖动", description: "调整文本或标签顺序")
+            }
+        }
+        .padding(14)
+        .frame(width: 250, alignment: .leading)
+        .foregroundStyle(ClipboardTheme.ink.opacity(0.82))
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.94))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.28)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(ClipboardTheme.mint.opacity(0.24), lineWidth: 1)
+                }
+                .shadow(color: Color.black.opacity(0.12), radius: 16, y: 7)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            Image(systemName: "arrowtriangle.down.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.white.opacity(0.94))
+                .offset(x: -48, y: 8)
+        }
+    }
+
+    private func usageHelpRow(shortcut: String, description: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(shortcut)
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(ClipboardTheme.mintDeep.opacity(0.88))
+                .frame(width: 62, alignment: .leading)
+
+            Text(description)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
         }
     }
 
@@ -717,10 +787,10 @@ struct ClipboardPanelView: View {
     }
 
     private func header(
-        title: String,
-        subtitle: String,
+        title: String? = nil,
+        subtitle: String? = nil,
         showsBackButton: Bool = false,
-        showsListStatus: Bool = false
+        showsTagButton: Bool = false
     ) -> some View {
         HStack(spacing: 12) {
             if showsBackButton {
@@ -745,34 +815,49 @@ struct ClipboardPanelView: View {
                 .excludedFromWindowDrag()
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .lineLimit(1)
+            if let title {
+                if showsTagButton {
+                    HStack(spacing: 9) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(ClipboardTheme.mint.opacity(0.14))
 
-                HStack(spacing: 5) {
-                    Text(subtitle)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                            Image(systemName: "doc.on.clipboard.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(ClipboardTheme.mintDeep)
+                        }
+                        .frame(width: 30, height: 30)
 
-                    if showsListStatus {
-                        Text("·")
-                            .foregroundStyle(.quaternary)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(title)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .lineLimit(1)
 
-                        Image(systemName: "arrow.up.arrow.down")
-                            .font(.system(size: 10, weight: .bold))
-
-                        Text("拖动排序")
+                            Text("\(viewModel.items.count) 条文本")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
                             .lineLimit(1)
+
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.system(size: 11, weight: .medium, design: .rounded))
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
                     }
                 }
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(.tertiary)
             }
 
             Spacer(minLength: 5)
 
-            if showsListStatus {
+            if showsTagButton {
                 if viewModel.tags.count <= 1 {
                     Button {
                         beginAddingTag()
@@ -823,9 +908,9 @@ struct ClipboardPanelView: View {
             .help("关闭")
             .excludedFromWindowDrag()
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 14)
-        .padding(.bottom, 14)
+        .frame(minHeight: showsTagButton ? 32 : 42)
+        .padding(.horizontal, showsTagButton ? 18 : 20)
+        .padding(.vertical, showsTagButton ? 9 : 14)
     }
 
     private func preview(for text: String) -> String {

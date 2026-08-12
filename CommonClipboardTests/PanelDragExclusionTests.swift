@@ -29,7 +29,7 @@ final class PanelDragExclusionTests: XCTestCase {
         showPanel(itemCount: 5, forceKeyWindow: false)
 
         // 标题栏里的空白，既不是按钮也不是列表。
-        press(at: CGPoint(x: 210, y: 34))
+        press(at: CGPoint(x: 300, y: 25))
 
         XCTAssertGreaterThan(recorder.count, 0, "空白区域应该可以直接拖动窗口")
     }
@@ -57,7 +57,7 @@ final class PanelDragExclusionTests: XCTestCase {
         var closeCount = 0
         showPanel(itemCount: 5, onClose: { closeCount += 1 })
 
-        press(at: CGPoint(x: 464, y: 37))
+        press(at: CGPoint(x: 466, y: 25))
 
         XCTAssertEqual(closeCount, 1, "点击应该落在关闭按钮上")
         XCTAssertEqual(recorder.count, 0, "关闭按钮不能被窗口拖动抢占")
@@ -79,7 +79,8 @@ final class PanelDragExclusionTests: XCTestCase {
         let workTagID = viewModel.tags.last?.id
 
         // 标签栏里第二个标签「工作」。
-        click(at: CGPoint(x: 120, y: 102))
+        click(at: CGPoint(x: 120, y: 69))
+        click(at: CGPoint(x: 120, y: 69))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "点击应该落在「工作」标签上")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")

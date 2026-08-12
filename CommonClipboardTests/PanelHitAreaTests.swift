@@ -27,13 +27,13 @@ final class PanelHitAreaTests: XCTestCase {
 
     // MARK: - 右上角关闭按钮
 
-    /// 关闭按钮是 32×32、右边缘贴着 20pt 内边距，所以圆心在 (464, 37)、半径 16。
-    /// (454, 28) 距圆心 13.5pt，稳稳在圆里，但离中间那个 11pt 的 ✕ 笔画很远。
+    /// 关闭按钮是 32×32、右边缘贴着 18pt 内边距，所以圆心在 (466, 25)、半径 16。
+    /// (456, 16) 距圆心 13.5pt，稳稳在圆里，但离中间那个 11pt 的 ✕ 笔画很远。
     func testCloseButtonAcceptsClicksAwayFromTheGlyph() {
         var closeCount = 0
         showPanel(itemCount: 5, onClose: { closeCount += 1 })
 
-        press(at: CGPoint(x: 454, y: 28))
+        press(at: CGPoint(x: 456, y: 16))
 
         XCTAssertEqual(closeCount, 1, "关闭按钮圆形范围内的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "关闭按钮不能被窗口拖动抢占")
@@ -45,7 +45,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, onClose: { closeCount += 1 })
 
         // 关闭按钮左侧的标题栏空白。
-        press(at: CGPoint(x: 441, y: 37))
+        press(at: CGPoint(x: 443, y: 25))
 
         XCTAssertEqual(closeCount, 0, "按钮外面的空隙不该触发关闭")
         XCTAssertGreaterThan(recorder.count, 0, "按钮外面的空隙应该还能拖动窗口")
@@ -53,13 +53,13 @@ final class PanelHitAreaTests: XCTestCase {
 
     // MARK: - 标签胶囊
 
-    /// 标签栏从 y=70 起、高 56，胶囊高 30 居中，所以胶囊纵向占 [83, 113]。
-    /// y=91 仍在 12pt 文字的字面之上——修复前这里是死区。
+    /// 标签栏从 y=50 起、高 56，胶囊高 30 居中，所以胶囊纵向占 [63, 93]。
+    /// y=69 仍在 12pt 文字的字面之上——修复前这里是死区。
     func testTagChipAcceptsClicksAboveTheLabelText() {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        click(at: CGPoint(x: 120, y: 91))
+        click(at: CGPoint(x: 120, y: 69))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "标签胶囊上缘的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -70,7 +70,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        click(at: CGPoint(x: 120, y: 109))
+        click(at: CGPoint(x: 120, y: 74))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "标签胶囊下缘的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -81,7 +81,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let defaultTagID = viewModel.tags.first?.id
 
-        press(at: CGPoint(x: 120, y: 79))
+        click(at: CGPoint(x: 120, y: 40))
 
         XCTAssertEqual(viewModel.selectedTagID, defaultTagID, "胶囊外面的空白不该切换标签")
     }
