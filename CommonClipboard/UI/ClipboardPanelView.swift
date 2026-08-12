@@ -276,11 +276,6 @@ struct ClipboardPanelView: View {
 
     private var tagBar: some View {
         HStack(spacing: 8) {
-            Image(systemName: "tag.fill")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(ClipboardTheme.mintDeep.opacity(0.76))
-                .frame(width: 20)
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(viewModel.tags) { tag in
@@ -748,23 +743,6 @@ struct ClipboardPanelView: View {
                 }
                 .help("返回列表")
                 .excludedFromWindowDrag()
-            } else {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [ClipboardTheme.mint, ClipboardTheme.mintDeep],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 46, height: 46)
-                        .glassEffect(in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-
-                    Image(systemName: "doc.on.clipboard.fill")
-                        .font(.system(size: 21, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -823,26 +801,6 @@ struct ClipboardPanelView: View {
                     .help("添加标签")
                     .excludedFromWindowDrag()
                 }
-
-                HStack(spacing: 4) {
-                    Image(systemName: "square.stack.3d.up")
-                        .font(.system(size: 11, weight: .semibold))
-
-                    Text("\(viewModel.items.count) 条")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(ClipboardTheme.mintDeep.opacity(0.82))
-                .padding(.horizontal, 8)
-                .frame(height: 30)
-                .background {
-                    Capsule()
-                        .fill(ClipboardTheme.mint.opacity(0.10))
-                        .overlay {
-                            Capsule()
-                                .stroke(ClipboardTheme.mint.opacity(0.22), lineWidth: 1)
-                        }
-                }
-                .help("当前保存的文本数量")
             }
 
             Button {
@@ -1148,13 +1106,6 @@ private struct ClipboardRow: View {
                 .lineLimit(1)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-            Image(systemName: isSelected ? "arrow.turn.down.left" : "arrow.right")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(
-                    isSelected ? ClipboardTheme.mintDeep.opacity(0.78) : Color.secondary.opacity(0.65)
-                )
-                .frame(width: 20, height: 20)
         }
         .padding(.horizontal, 11)
         .frame(height: ClipboardPanelView.listRowHeight)

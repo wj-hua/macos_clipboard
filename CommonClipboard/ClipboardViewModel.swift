@@ -117,8 +117,7 @@ final class ClipboardViewModel: ObservableObject {
             return
         }
 
-        let nextIndex = min(max(currentIndex + offset, 0), tags.count - 1)
-        guard nextIndex != currentIndex else { return }
+        let nextIndex = wrappedIndex(from: currentIndex, offset: offset, count: tags.count)
 
         selectTag(withID: tags[nextIndex].id)
     }
@@ -218,7 +217,7 @@ final class ClipboardViewModel: ObservableObject {
             return
         }
 
-        let nextIndex = min(max(currentIndex + offset, 0), items.count - 1)
+        let nextIndex = wrappedIndex(from: currentIndex, offset: offset, count: items.count)
         self.selectedItemID = items[nextIndex].id
     }
 
@@ -275,5 +274,10 @@ final class ClipboardViewModel: ObservableObject {
     private var selectedItem: PasteItem? {
         guard let selectedItemID else { return nil }
         return items.first(where: { $0.id == selectedItemID })
+    }
+
+    private func wrappedIndex(from currentIndex: Int, offset: Int, count: Int) -> Int {
+        let normalizedOffset = offset % count
+        return (currentIndex + normalizedOffset + count) % count
     }
 }

@@ -4,7 +4,7 @@ import XCTest
 @testable import CommonClipboard
 
 final class ClipboardViewModelTests: XCTestCase {
-    func testArrowSelectionStopsAtListBoundaries() throws {
+    func testArrowSelectionWrapsAtListBoundaries() throws {
         let store = PasteItemStore(fileURL: temporaryFileURL())
         let first = try XCTUnwrap(store.add(text: "第一条"))
         let second = try XCTUnwrap(store.add(text: "第二条"))
@@ -14,16 +14,19 @@ final class ClipboardViewModelTests: XCTestCase {
         viewModel.refreshFromStore()
         viewModel.selectedItemID = first.id
         viewModel.moveSelection(by: -1)
+        XCTAssertEqual(viewModel.selectedItemID, second.id)
+
+        viewModel.moveSelection(by: 1)
         XCTAssertEqual(viewModel.selectedItemID, first.id)
 
         viewModel.moveSelection(by: 1)
         XCTAssertEqual(viewModel.selectedItemID, second.id)
 
         viewModel.moveSelection(by: 1)
-        XCTAssertEqual(viewModel.selectedItemID, second.id)
+        XCTAssertEqual(viewModel.selectedItemID, first.id)
     }
 
-    func testArrowSelectionSwitchesTagsAndStopsAtTagBoundaries() throws {
+    func testArrowSelectionSwitchesTagsAndWrapsAtTagBoundaries() throws {
         let store = PasteItemStore(fileURL: temporaryFileURL())
         let defaultItem = try XCTUnwrap(store.add(text: "默认文本"))
         let workTag = try XCTUnwrap(store.addTag(name: "工作"))
@@ -34,6 +37,10 @@ final class ClipboardViewModelTests: XCTestCase {
         let viewModel = ClipboardViewModel(store: store, pasteService: service)
 
         viewModel.moveTagSelection(by: -1)
+        XCTAssertEqual(viewModel.selectedTagID, personalTag.id)
+        XCTAssertEqual(viewModel.selectedItemID, personalItem.id)
+
+        viewModel.moveTagSelection(by: 1)
         XCTAssertEqual(viewModel.selectedTagID, PasteTag.defaultID)
         XCTAssertEqual(viewModel.selectedItemID, defaultItem.id)
 
@@ -46,12 +53,12 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedItemID, personalItem.id)
 
         viewModel.moveTagSelection(by: 1)
-        XCTAssertEqual(viewModel.selectedTagID, personalTag.id)
-        XCTAssertEqual(viewModel.selectedItemID, personalItem.id)
+        XCTAssertEqual(viewModel.selectedTagID, PasteTag.defaultID)
+        XCTAssertEqual(viewModel.selectedItemID, defaultItem.id)
 
         viewModel.moveTagSelection(by: -1)
-        XCTAssertEqual(viewModel.selectedTagID, workTag.id)
-        XCTAssertEqual(viewModel.selectedItemID, workItem.id)
+        XCTAssertEqual(viewModel.selectedTagID, personalTag.id)
+        XCTAssertEqual(viewModel.selectedItemID, personalItem.id)
     }
 
     func testSelectItemByIndexSelectsTheCorrespondingItem() throws {

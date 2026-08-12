@@ -79,7 +79,7 @@ final class PanelDragExclusionTests: XCTestCase {
         let workTagID = viewModel.tags.last?.id
 
         // 标签栏里第二个标签「工作」。
-        press(at: CGPoint(x: 150, y: 102))
+        click(at: CGPoint(x: 120, y: 102))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "点击应该落在「工作」标签上")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -169,6 +169,14 @@ final class PanelDragExclusionTests: XCTestCase {
         post(.leftMouseDown, at: panelPoint)
         post(.leftMouseDragged, at: moved)
         post(.leftMouseUp, at: moved)
+
+        pumpEvents(for: 1.0)
+    }
+
+    /// 标签本身带有拖拽排序手势，验证点击时不附加位移，避免合成事件误启动拖拽会话。
+    private func click(at panelPoint: CGPoint) {
+        post(.leftMouseDown, at: panelPoint)
+        post(.leftMouseUp, at: panelPoint)
 
         pumpEvents(for: 1.0)
     }

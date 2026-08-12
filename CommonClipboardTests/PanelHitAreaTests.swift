@@ -44,7 +44,7 @@ final class PanelHitAreaTests: XCTestCase {
         var closeCount = 0
         showPanel(itemCount: 5, onClose: { closeCount += 1 })
 
-        // 「N 条」胶囊和关闭按钮之间 12pt 的空隙。
+        // 关闭按钮左侧的标题栏空白。
         press(at: CGPoint(x: 441, y: 37))
 
         XCTAssertEqual(closeCount, 0, "按钮外面的空隙不该触发关闭")
@@ -53,13 +53,13 @@ final class PanelHitAreaTests: XCTestCase {
 
     // MARK: - 标签胶囊
 
-    /// 标签栏从 y=74 起、高 56，胶囊高 30 居中，所以胶囊纵向占 [87, 117]。
-    /// y=91 只比胶囊上边缘低 4pt，远在 12pt 文字的字面之上——修复前这里是死区。
+    /// 标签栏从 y=70 起、高 56，胶囊高 30 居中，所以胶囊纵向占 [83, 113]。
+    /// y=91 仍在 12pt 文字的字面之上——修复前这里是死区。
     func testTagChipAcceptsClicksAboveTheLabelText() {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        press(at: CGPoint(x: 150, y: 91))
+        click(at: CGPoint(x: 120, y: 91))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "标签胶囊上缘的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -70,7 +70,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        press(at: CGPoint(x: 150, y: 113))
+        click(at: CGPoint(x: 120, y: 109))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "标签胶囊下缘的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -81,7 +81,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let defaultTagID = viewModel.tags.first?.id
 
-        press(at: CGPoint(x: 150, y: 79))
+        press(at: CGPoint(x: 120, y: 79))
 
         XCTAssertEqual(viewModel.selectedTagID, defaultTagID, "胶囊外面的空白不该切换标签")
     }
@@ -148,6 +148,14 @@ final class PanelHitAreaTests: XCTestCase {
         post(.leftMouseDown, at: panelPoint)
         post(.leftMouseDragged, at: moved)
         post(.leftMouseUp, at: moved)
+
+        pumpEvents(for: 1.0)
+    }
+
+    /// 标签按钮带有拖拽排序手势，命中区域测试只投递一次完整单击。
+    private func click(at panelPoint: CGPoint) {
+        post(.leftMouseDown, at: panelPoint)
+        post(.leftMouseUp, at: panelPoint)
 
         pumpEvents(for: 1.0)
     }

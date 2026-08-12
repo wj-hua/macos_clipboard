@@ -22,6 +22,7 @@
 		A10000000000000000000011 /* WindowDragRecognizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* WindowDragRecognizerTests.swift */; };
 		A10000000000000000000012 /* PanelDragExclusionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* PanelDragExclusionTests.swift */; };
 		A10000000000000000000013 /* PanelHitAreaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000013 /* PanelHitAreaTests.swift */; };
+		A10000000000000000000014 /* ScrollWheelNavigationRecognizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* ScrollWheelNavigationRecognizerTests.swift */; };
 		A1000000000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -41,6 +42,7 @@
 		B10000000000000000000011 /* WindowDragRecognizerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WindowDragRecognizerTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000012 /* PanelDragExclusionTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PanelDragExclusionTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000013 /* PanelHitAreaTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PanelHitAreaTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000014 /* ScrollWheelNavigationRecognizerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScrollWheelNavigationRecognizerTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000000B /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B1000000000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1000000000000000000000C /* CommonClipboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CommonClipboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -133,6 +135,7 @@
 				B10000000000000000000011 /* WindowDragRecognizerTests.swift */,
 				B10000000000000000000012 /* PanelDragExclusionTests.swift */,
 				B10000000000000000000013 /* PanelHitAreaTests.swift */,
+				B10000000000000000000014 /* ScrollWheelNavigationRecognizerTests.swift */,
 			);
 			path = CommonClipboardTests;
 			sourceTree = "<group>";
@@ -269,6 +272,7 @@
 				A10000000000000000000011 /* WindowDragRecognizerTests.swift in Sources */,
 				A10000000000000000000012 /* PanelDragExclusionTests.swift in Sources */,
 				A10000000000000000000013 /* PanelHitAreaTests.swift in Sources */,
+				A10000000000000000000014 /* ScrollWheelNavigationRecognizerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
