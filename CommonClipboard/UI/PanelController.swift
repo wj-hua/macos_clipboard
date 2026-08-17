@@ -258,7 +258,7 @@ final class PanelController: NSObject, NSWindowDelegate {
                 width: ClipboardPanelView.panelWidth,
                 height: ClipboardPanelView.panelHeight(
                     for: viewModel.items.count,
-                    tagCount: viewModel.tags.count,
+                    tags: viewModel.tags,
                     mode: viewModel.mode
                 )
             ),
@@ -400,7 +400,7 @@ final class PanelController: NSObject, NSWindowDelegate {
     private func updatePanelSize(animated: Bool = true) {
         let desiredHeight = ClipboardPanelView.panelHeight(
             for: viewModel.items.count,
-            tagCount: viewModel.tags.count,
+            tags: viewModel.tags,
             mode: viewModel.mode
         )
         guard abs(panel.frame.height - desiredHeight) > 0.5 else { return }
@@ -409,7 +409,21 @@ final class PanelController: NSObject, NSWindowDelegate {
         let topEdge = frame.maxY
         frame.size = NSSize(width: ClipboardPanelView.panelWidth, height: desiredHeight)
         frame.origin.y = topEdge - desiredHeight
+        frame.origin.y = clampedOriginY(for: frame)
         panel.setFrame(frame, display: true, animate: animated && panel.isVisible)
+    }
+
+    /// 面板固定顶边向下生长，标签换行时底栏可能被顶到屏幕外，
+    /// 所以变高之后要把它拉回可视区域；比可视区域还高时只能居中，两端各让一点。
+    private func clampedOriginY(for frame: NSRect) -> CGFloat {
+        guard let screen = panel.screen ?? NSScreen.main else { return frame.origin.y }
+
+        let visibleFrame = screen.visibleFrame
+        guard frame.height < visibleFrame.height else {
+            return visibleFrame.midY - frame.height / 2
+        }
+
+        return min(max(frame.origin.y, visibleFrame.minY), visibleFrame.maxY - frame.height)
     }
 
     private func positionPanel() {

@@ -78,9 +78,12 @@ final class PanelDragExclusionTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        // 标签栏里第二个标签「工作」。
-        click(at: CGPoint(x: 120, y: 69))
-        click(at: CGPoint(x: 120, y: 69))
+        // 标签栏里第二个标签「工作」，纵向取胶囊正中。
+        let tagChipCenterY = ClipboardPanelView.listHeaderHeight
+            + TagBarMetrics.verticalPadding
+            + TagBarMetrics.chipHeight / 2
+        click(at: CGPoint(x: 120, y: tagChipCenterY))
+        click(at: CGPoint(x: 120, y: tagChipCenterY))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "点击应该落在「工作」标签上")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -122,7 +125,7 @@ final class PanelDragExclusionTests: XCTestCase {
 
         panelHeight = ClipboardPanelView.panelHeight(
             for: viewModel.items.count,
-            tagCount: viewModel.tags.count,
+            tags: viewModel.tags,
             mode: viewModel.mode
         )
 

@@ -28,31 +28,46 @@ struct ClipboardPanelView: View {
     static let maximumListRows = 10
     fileprivate static let panelCoordinateSpace = "ClipboardPanel"
 
-    private static let listHeaderHeight: CGFloat = 50
-    private static let tagBarHeight: CGFloat = 56
-    private static let tagAddButtonSize: CGFloat = 40
+    static let listHeaderHeight: CGFloat = 50
     private static let listFooterHeight: CGFloat = 60
     private static let editorPanelHeight: CGFloat = 420
+
+    /// 面板高度预算。标签栏会随标签数量换行变高，列表行数必须让位，
+    /// 否则面板会长到屏幕可视区域之外，底栏按钮点不到。
+    /// 取 700 是为了在 1280x800 这类最小的 Mac 屏幕上也留有余量。
+    static let maxPanelHeight: CGFloat = 700
 
     static var listRowSlotHeight: CGFloat {
         listRowHeight + listRowSpacing
     }
 
-    static func visibleListRows(for itemCount: Int) -> Int {
-        min(max(itemCount, minimumListRows), maximumListRows)
+    /// 只有多于一个标签时才显示标签栏，高度计算与视图必须用同一个判断。
+    static func tagBarHeight(for tags: [PasteTag]) -> CGFloat {
+        tags.count > 1 ? TagBarMetrics.barHeight(for: tags) : 0
+    }
+
+    static func visibleListRows(for itemCount: Int, tagBarHeight: CGFloat = 0) -> Int {
+        let desired = min(max(itemCount, minimumListRows), maximumListRows)
+        let available = maxPanelHeight - listHeaderHeight - listFooterHeight - tagBarHeight
+        let fitting = Int(floor(available / listRowSlotHeight))
+        // 列表本身可以滚动，压缩行数只是少露几行；但不能压到比最小行数还少。
+        return max(minimumListRows, min(desired, fitting))
     }
 
     static func panelHeight(
         for itemCount: Int,
-        tagCount: Int = 1,
+        tags: [PasteTag] = [],
         mode: ClipboardViewModel.Mode
     ) -> CGFloat {
         switch mode {
         case .list:
+            // 标签栏会按标签实际宽度换行，面板高度必须跟着行数一起长，
+            // 否则多出来的行会被窗口边界裁掉。
+            let barHeight = tagBarHeight(for: tags)
             return listHeaderHeight
-                + (tagCount > 1 ? tagBarHeight : 0)
+                + barHeight
                 + listFooterHeight
-                + listRowSlotHeight * CGFloat(visibleListRows(for: itemCount))
+                + listRowSlotHeight * CGFloat(visibleListRows(for: itemCount, tagBarHeight: barHeight))
         case .editor:
             return editorPanelHeight
         }
@@ -61,13 +76,18 @@ struct ClipboardPanelView: View {
     private var panelHeight: CGFloat {
         Self.panelHeight(
             for: viewModel.items.count,
-            tagCount: viewModel.tags.count,
+            tags: viewModel.tags,
             mode: viewModel.mode
         )
     }
 
     private var listAreaHeight: CGFloat {
-        Self.listRowSlotHeight * CGFloat(Self.visibleListRows(for: viewModel.items.count))
+        Self.listRowSlotHeight * CGFloat(
+            Self.visibleListRows(
+                for: viewModel.items.count,
+                tagBarHeight: Self.tagBarHeight(for: viewModel.tags)
+            )
+        )
     }
 
     private func isWindowDragExcluded(_ location: CGPoint) -> Bool {
@@ -272,48 +292,36 @@ struct ClipboardPanelView: View {
     }
 
     private var tagBar: some View {
-        HStack(spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(viewModel.tags) { tag in
-                        tagChip(for: tag)
-                            .onDrop(
-                                of: [.text],
-                                delegate: TagDropDelegate(
-                                    tagID: tag.id,
-                                    draggedTagID: $draggedTagID,
-                                    tags: viewModel.tags,
-                                    moveTags: viewModel.moveTags
+        // 单行横向滚动会把标签裁掉，而列表模式下滚轮已被面板用于切换选中项，
+        // 那条 ScrollView 实际滚不动，所以这里改为按行铺开、全部展示。
+        VStack(alignment: .leading, spacing: TagBarMetrics.rowSpacing) {
+            ForEach(Array(TagBarMetrics.rows(for: viewModel.tags).enumerated()), id: \.offset) { _, row in
+                HStack(spacing: TagBarMetrics.itemSpacing) {
+                    ForEach(row) { entry in
+                        switch entry {
+                        case .tag(let tag):
+                            tagChip(for: tag)
+                                .onDrop(
+                                    of: [.text],
+                                    delegate: TagDropDelegate(
+                                        tagID: tag.id,
+                                        draggedTagID: $draggedTagID,
+                                        tags: viewModel.tags,
+                                        moveTags: viewModel.moveTags
+                                    )
                                 )
-                            )
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-
-            Button {
-                beginAddingTag()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(ClipboardTheme.mint.opacity(0.12))
-                        .overlay {
-                            Circle()
-                                .stroke(ClipboardTheme.mint.opacity(0.22), lineWidth: 1)
+                        case .addButton:
+                            addTagButton
                         }
+                    }
 
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .bold))
+                    Spacer(minLength: 0)
                 }
-                .foregroundStyle(ClipboardTheme.mintDeep)
-                .frame(width: Self.tagAddButtonSize, height: Self.tagAddButtonSize)
-                .contentShape(Circle())
+                .frame(height: TagBarMetrics.rowHeight)
             }
-            .buttonStyle(.plain)
-            .help("添加标签")
         }
-        .frame(height: Self.tagBarHeight)
-        .padding(.horizontal, 18)
+        .frame(height: TagBarMetrics.barHeight(for: viewModel.tags))
+        .padding(.horizontal, TagBarMetrics.horizontalPadding)
         .background {
             Rectangle()
                 .fill(Color.white.opacity(0.34))
@@ -332,6 +340,29 @@ struct ClipboardPanelView: View {
         .excludedFromWindowDrag()
     }
 
+    private var addTagButton: some View {
+        Button {
+            beginAddingTag()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(ClipboardTheme.mint.opacity(0.12))
+                    .overlay {
+                        Circle()
+                            .stroke(ClipboardTheme.mint.opacity(0.22), lineWidth: 1)
+                    }
+
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .foregroundStyle(ClipboardTheme.mintDeep)
+            .frame(width: TagBarMetrics.addButtonSize, height: TagBarMetrics.addButtonSize)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("添加标签")
+    }
+
     private func tagChip(for tag: PasteTag) -> some View {
         let isSelected = viewModel.selectedTagID == tag.id
 
@@ -339,18 +370,18 @@ struct ClipboardPanelView: View {
             Button {
                 viewModel.selectTag(withID: tag.id)
             } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: tag.isDefault ? "tray.fill" : "tag.fill")
-                        .font(.system(size: 10, weight: .semibold))
+                HStack(spacing: TagBarMetrics.chipIconSpacing) {
+                    Image(systemName: TagBarMetrics.symbolName(for: tag))
+                        .font(.system(size: TagBarMetrics.chipIconSize, weight: .semibold))
 
                     Text(tag.name)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.system(size: TagBarMetrics.chipTextSize, weight: .semibold, design: .rounded))
                         .lineLimit(1)
                 }
                 .foregroundStyle(isSelected ? ClipboardTheme.mintDeep : ClipboardTheme.ink.opacity(0.78))
-                .padding(.leading, 10)
-                .padding(.trailing, tag.isDefault ? 10 : 7)
-                .frame(height: 30)
+                .padding(.leading, TagBarMetrics.chipLeadingPadding)
+                .padding(.trailing, tag.isDefault ? TagBarMetrics.chipLeadingPadding : TagBarMetrics.chipTrailingPadding)
+                .frame(height: TagBarMetrics.chipHeight)
                 // 让整块胶囊区域可点，而不是只有图标和文字的实际像素。
                 .contentShape(Rectangle())
             }
@@ -363,14 +394,14 @@ struct ClipboardPanelView: View {
             if !tag.isDefault {
                 Rectangle()
                     .fill(isSelected ? ClipboardTheme.mint.opacity(0.24) : ClipboardTheme.ink.opacity(0.12))
-                    .frame(width: 1, height: 16)
+                    .frame(width: TagBarMetrics.chipDividerWidth, height: 16)
 
                 Button {
                     tagToDelete = tag
                 } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .bold))
-                        .frame(width: 25, height: 30)
+                        .frame(width: TagBarMetrics.chipDeleteButtonWidth, height: TagBarMetrics.chipHeight)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -917,6 +948,136 @@ struct ClipboardPanelView: View {
         text
             .replacingOccurrences(of: "\n", with: "  ↵  ")
             .replacingOccurrences(of: "\r", with: "")
+    }
+}
+
+/// 标签栏中的一格：标签胶囊，或行尾的「新建标签」按钮。
+enum TagBarEntry: Identifiable {
+    case tag(PasteTag)
+    case addButton
+
+    var id: String {
+        switch self {
+        case .tag(let tag):
+            return tag.id.uuidString
+        case .addButton:
+            return "add-tag-button"
+        }
+    }
+}
+
+/// 标签栏的排版尺寸。视图与 `ClipboardPanelView.panelHeight` 共用这里的换行结果，
+/// 面板高度才能和实际行数保持一致。
+enum TagBarMetrics {
+    static let chipHeight: CGFloat = 30
+    static let chipIconSize: CGFloat = 10
+    static let chipTextSize: CGFloat = 12
+    static let chipIconSpacing: CGFloat = 5
+    static let chipLeadingPadding: CGFloat = 10
+    static let chipTrailingPadding: CGFloat = 7
+    static let chipDividerWidth: CGFloat = 1
+    static let chipDeleteButtonWidth: CGFloat = 25
+
+    static let addButtonSize: CGFloat = 30
+    static let rowHeight: CGFloat = 30
+    static let rowSpacing: CGFloat = 6
+    static let itemSpacing: CGFloat = 8
+    static let horizontalPadding: CGFloat = 18
+    static let verticalPadding: CGFloat = 9
+
+    static func symbolName(for tag: PasteTag) -> String {
+        tag.isDefault ? "tray.fill" : "tag.fill"
+    }
+
+    /// 一行可用的宽度。
+    static var contentWidth: CGFloat {
+        ClipboardPanelView.panelWidth - horizontalPadding * 2
+    }
+
+    /// 估算胶囊宽度。这里只能偏大不能偏小：算窄了标签就会被挤出面板宽度，
+    /// 算宽了最多是行尾多留一点空白。
+    static func chipWidth(for tag: PasteTag) -> CGFloat {
+        let textWidth = (tag.name as NSString).size(withAttributes: [.font: chipFont]).width
+        var width = chipLeadingPadding
+            + symbolWidth(for: tag)
+            + chipIconSpacing
+            + textWidth
+            + (tag.isDefault ? chipLeadingPadding : chipTrailingPadding)
+
+        if !tag.isDefault {
+            width += chipDividerWidth + chipDeleteButtonWidth
+        }
+
+        return ceil(width) + 2
+    }
+
+    /// 按可用宽度把标签铺成若干行，「新建标签」按钮永远跟在最后一个标签后面。
+    static func rows(for tags: [PasteTag]) -> [[TagBarEntry]] {
+        let available = contentWidth
+        var rows: [[TagBarEntry]] = []
+        var currentRow: [TagBarEntry] = []
+        var currentWidth: CGFloat = 0
+
+        func append(_ entry: TagBarEntry, width: CGFloat) {
+            if currentRow.isEmpty {
+                currentRow = [entry]
+                currentWidth = width
+                return
+            }
+
+            let widthWithEntry = currentWidth + itemSpacing + width
+            if widthWithEntry > available {
+                rows.append(currentRow)
+                currentRow = [entry]
+                currentWidth = width
+            } else {
+                currentRow.append(entry)
+                currentWidth = widthWithEntry
+            }
+        }
+
+        for tag in tags {
+            // 单个标签比整行还宽时只能截断，但仍要占满一行，不能溢出面板。
+            append(.tag(tag), width: min(chipWidth(for: tag), available))
+        }
+        append(.addButton, width: addButtonSize)
+
+        if !currentRow.isEmpty {
+            rows.append(currentRow)
+        }
+        return rows
+    }
+
+    static func barHeight(for tags: [PasteTag]) -> CGFloat {
+        let rowCount = max(rows(for: tags).count, 1)
+        return CGFloat(rowCount) * rowHeight
+            + CGFloat(rowCount - 1) * rowSpacing
+            + verticalPadding * 2
+    }
+
+    private static let chipFont: NSFont = {
+        let base = NSFont.systemFont(ofSize: chipTextSize, weight: .semibold)
+        guard let descriptor = base.fontDescriptor.withDesign(.rounded),
+              let rounded = NSFont(descriptor: descriptor, size: chipTextSize) else {
+            return base
+        }
+        return rounded
+    }()
+
+    private static let defaultSymbolWidth = measuredSymbolWidth(named: "tray.fill")
+    private static let tagSymbolWidth = measuredSymbolWidth(named: "tag.fill")
+
+    private static func symbolWidth(for tag: PasteTag) -> CGFloat {
+        tag.isDefault ? defaultSymbolWidth : tagSymbolWidth
+    }
+
+    private static func measuredSymbolWidth(named name: String) -> CGFloat {
+        let configuration = NSImage.SymbolConfiguration(pointSize: chipIconSize, weight: .semibold)
+        guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+            .withSymbolConfiguration(configuration) else {
+            return chipIconSize + 4
+        }
+        return ceil(image.size.width)
     }
 }
 

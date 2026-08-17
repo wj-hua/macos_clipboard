@@ -53,13 +53,24 @@ final class PanelHitAreaTests: XCTestCase {
 
     // MARK: - 标签胶囊
 
-    /// 标签栏从 y=50 起、高 56，胶囊高 30 居中，所以胶囊纵向占 [63, 93]。
-    /// y=69 仍在 12pt 文字的字面之上——修复前这里是死区。
+    /// 标签栏接在标题栏下面，内部上下各留 `verticalPadding`，胶囊高 `chipHeight`。
+    /// 这些坐标一律从 `TagBarMetrics` 推出来，标签栏高度一变就跟着走，
+    /// 不会像写死数字那样悄悄滑出「文字之外」的死区、让用例变成恒真。
+    private var tagChipTop: CGFloat {
+        ClipboardPanelView.listHeaderHeight + TagBarMetrics.verticalPadding
+    }
+
+    private var tagChipBottom: CGFloat {
+        tagChipTop + TagBarMetrics.chipHeight
+    }
+
+    /// 12pt 文字的行框只占胶囊中间约 14pt，上下各剩约 8pt 空白——修复前那里是死区。
+    /// 取距胶囊上缘 2pt，既在胶囊里，又在文字行框之外。
     func testTagChipAcceptsClicksAboveTheLabelText() {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        click(at: CGPoint(x: 120, y: 69))
+        click(at: CGPoint(x: 120, y: tagChipTop + 2))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "标签胶囊上缘的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -70,7 +81,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let workTagID = viewModel.tags.last?.id
 
-        click(at: CGPoint(x: 120, y: 74))
+        click(at: CGPoint(x: 120, y: tagChipBottom - 2))
 
         XCTAssertEqual(viewModel.selectedTagID, workTagID, "标签胶囊下缘的空白也要能点")
         XCTAssertEqual(recorder.count, 0, "标签栏要保留长按拖动排序")
@@ -81,7 +92,7 @@ final class PanelHitAreaTests: XCTestCase {
         showPanel(itemCount: 5, extraTagNames: ["工作"])
         let defaultTagID = viewModel.tags.first?.id
 
-        click(at: CGPoint(x: 120, y: 40))
+        click(at: CGPoint(x: 120, y: tagChipTop - 2))
 
         XCTAssertEqual(viewModel.selectedTagID, defaultTagID, "胶囊外面的空白不该切换标签")
     }
@@ -108,7 +119,7 @@ final class PanelHitAreaTests: XCTestCase {
 
         panelHeight = ClipboardPanelView.panelHeight(
             for: viewModel.items.count,
-            tagCount: viewModel.tags.count,
+            tags: viewModel.tags,
             mode: viewModel.mode
         )
 
