@@ -257,7 +257,7 @@ final class PanelController: NSObject, NSWindowDelegate {
                 y: 0,
                 width: ClipboardPanelView.panelWidth,
                 height: ClipboardPanelView.panelHeight(
-                    for: viewModel.items.count,
+                    for: viewModel.visibleItems.count,
                     tags: viewModel.tags,
                     mode: viewModel.mode
                 )
@@ -306,6 +306,14 @@ final class PanelController: NSObject, NSWindowDelegate {
             .combineLatest(viewModel.$tags, viewModel.$mode)
             .receive(on: RunLoop.main)
             .sink { [weak self] _, _, _ in
+                self?.updatePanelSize()
+            }
+            .store(in: &sizeCancellables)
+
+        viewModel.$searchText
+            .combineLatest(viewModel.$searchScope)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _, _ in
                 self?.updatePanelSize()
             }
             .store(in: &sizeCancellables)
@@ -395,11 +403,12 @@ final class PanelController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         panel.makeKeyAndOrderFront(nil)
         panel.orderFrontRegardless()
+        viewModel.requestSearchFocus()
     }
 
     private func updatePanelSize(animated: Bool = true) {
         let desiredHeight = ClipboardPanelView.panelHeight(
-            for: viewModel.items.count,
+            for: viewModel.visibleItems.count,
             tags: viewModel.tags,
             mode: viewModel.mode
         )
@@ -451,9 +460,16 @@ final class PanelController: NSObject, NSWindowDelegate {
         if event.keyCode == UInt16(kVK_Escape) {
             if viewModel.mode == .editor {
                 viewModel.cancelEditing()
+            } else if viewModel.clearSearch() {
+                viewModel.requestSearchFocus()
             } else {
                 hide()
             }
+            return true
+        }
+
+        if viewModel.mode == .list, isSearchFocusShortcut(event) {
+            viewModel.requestSearchFocus()
             return true
         }
 
@@ -494,6 +510,17 @@ final class PanelController: NSObject, NSWindowDelegate {
         default:
             return false
         }
+    }
+
+    private func isSearchFocusShortcut(_ event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([
+            .command,
+            .option,
+            .control,
+            .shift
+        ])
+        return modifiers == .command
+            && event.charactersIgnoringModifiers?.lowercased() == "f"
     }
 
     private func handleScrollWheel(_ event: NSEvent) -> Bool {

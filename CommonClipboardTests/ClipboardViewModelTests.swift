@@ -197,6 +197,87 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.items.map(\.text), ["工作文本"])
     }
 
+    func testSearchFiltersCurrentTagUsingEveryTermAndIgnoresCase() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let matchingItem = try XCTUnwrap(store.add(text: "GitHub Student Account"))
+        _ = try XCTUnwrap(store.add(text: "GitHub personal account"))
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        _ = try XCTUnwrap(store.add(text: "GitHub Student Account", to: workTag.id))
+        let viewModel = ClipboardViewModel(store: store, pasteService: MockPasteService())
+
+        viewModel.searchText = "student github"
+
+        XCTAssertEqual(viewModel.visibleItems.map(\.id), [matchingItem.id])
+        XCTAssertEqual(viewModel.selectedItemID, matchingItem.id)
+    }
+
+    func testAllTagsSearchIncludesMatchingItemsAndExposesTheirTagNames() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let defaultItem = try XCTUnwrap(store.add(text: "学校邮箱"))
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let workItem = try XCTUnwrap(store.add(text: "工作邮箱", to: workTag.id))
+        let viewModel = ClipboardViewModel(store: store, pasteService: MockPasteService())
+
+        viewModel.searchScope = .allTags
+        viewModel.searchText = "邮箱"
+
+        XCTAssertEqual(viewModel.visibleItems.map(\.id), [defaultItem.id, workItem.id])
+        XCTAssertEqual(viewModel.tagName(for: defaultItem), "默认")
+        XCTAssertEqual(viewModel.tagName(for: workItem), "工作")
+    }
+
+    func testChangingSearchKeepsSelectionInsideVisibleResults() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let first = try XCTUnwrap(store.add(text: "Apple ID"))
+        let second = try XCTUnwrap(store.add(text: "学校邮箱"))
+        let viewModel = ClipboardViewModel(store: store, pasteService: MockPasteService())
+
+        viewModel.selectedItemID = first.id
+        viewModel.searchText = "邮箱"
+
+        XCTAssertEqual(viewModel.visibleItems.map(\.id), [second.id])
+        XCTAssertEqual(viewModel.selectedItemID, second.id)
+
+        viewModel.searchText = "不存在"
+        XCTAssertTrue(viewModel.visibleItems.isEmpty)
+        XCTAssertNil(viewModel.selectedItemID)
+    }
+
+    func testKeyboardSelectionAndNumberPasteUseFilteredResults() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        _ = try XCTUnwrap(store.add(text: "忽略"))
+        let firstMatch = try XCTUnwrap(store.add(text: "邮箱一"))
+        let secondMatch = try XCTUnwrap(store.add(text: "邮箱二"))
+        let service = MockPasteService()
+        service.isTrusted = true
+        let viewModel = ClipboardViewModel(store: store, pasteService: service)
+        viewModel.prepareForPresentation(targetApplication: NSRunningApplication.current)
+        viewModel.searchText = "邮箱"
+
+        XCTAssertEqual(viewModel.selectedItemID, firstMatch.id)
+        viewModel.moveSelection(by: 1)
+        XCTAssertEqual(viewModel.selectedItemID, secondMatch.id)
+
+        XCTAssertTrue(viewModel.pasteItem(at: 0))
+        XCTAssertEqual(viewModel.selectedItemID, firstMatch.id)
+        XCTAssertEqual(service.pastedTexts, [firstMatch.text])
+    }
+
+    func testClearSearchReportsWhetherAQueryWasCleared() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let item = try XCTUnwrap(store.add(text: "常用文本"))
+        let viewModel = ClipboardViewModel(store: store, pasteService: MockPasteService())
+
+        XCTAssertFalse(viewModel.clearSearch())
+
+        viewModel.searchText = "没有结果"
+        XCTAssertNil(viewModel.selectedItemID)
+        XCTAssertTrue(viewModel.clearSearch())
+        XCTAssertEqual(viewModel.searchText, "")
+        XCTAssertEqual(viewModel.selectedItemID, item.id)
+        XCTAssertFalse(viewModel.clearSearch())
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("CommonClipboardTests", isDirectory: true)

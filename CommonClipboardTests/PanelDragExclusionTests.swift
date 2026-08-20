@@ -63,6 +63,20 @@ final class PanelDragExclusionTests: XCTestCase {
         XCTAssertEqual(recorder.count, 0, "关闭按钮不能被窗口拖动抢占")
     }
 
+    func testSearchFocusRequestMakesSearchFieldReadyForTyping() throws {
+        showPanel(itemCount: 5)
+
+        viewModel.requestSearchFocus()
+        pumpEvents(for: 0.3)
+
+        let fieldEditor = try XCTUnwrap(window.firstResponder as? NSTextView)
+        fieldEditor.insertText("文本 3", replacementRange: fieldEditor.selectedRange())
+        pumpEvents(for: 0.1)
+
+        XCTAssertEqual(viewModel.searchText, "文本 3")
+        XCTAssertEqual(viewModel.visibleItems.map(\.text), ["常用文本 3"])
+    }
+
     func testPressingTheItemListDoesNotStartAWindowDrag() {
         showPanel(itemCount: 5)
         let firstSelection = viewModel.selectedItemID

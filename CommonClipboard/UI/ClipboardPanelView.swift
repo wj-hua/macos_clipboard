@@ -18,6 +18,7 @@ struct ClipboardPanelView: View {
     @State private var tagErrorMessage: String?
     @State private var isTextEditorComposing = false
     @State private var isUsageHelpPresented = false
+    @FocusState private var isSearchFieldFocused: Bool
 
     private let panelCornerRadius: CGFloat = 24
 
@@ -28,7 +29,9 @@ struct ClipboardPanelView: View {
     static let maximumListRows = 10
     fileprivate static let panelCoordinateSpace = "ClipboardPanel"
 
-    static let listHeaderHeight: CGFloat = 50
+    private static let titleHeaderHeight: CGFloat = 50
+    private static let searchBarHeight: CGFloat = 48
+    static let listHeaderHeight: CGFloat = titleHeaderHeight + searchBarHeight
     private static let listFooterHeight: CGFloat = 60
     private static let editorPanelHeight: CGFloat = 420
 
@@ -75,7 +78,7 @@ struct ClipboardPanelView: View {
 
     private var panelHeight: CGFloat {
         Self.panelHeight(
-            for: viewModel.items.count,
+            for: viewModel.visibleItems.count,
             tags: viewModel.tags,
             mode: viewModel.mode
         )
@@ -84,7 +87,7 @@ struct ClipboardPanelView: View {
     private var listAreaHeight: CGFloat {
         Self.listRowSlotHeight * CGFloat(
             Self.visibleListRows(
-                for: viewModel.items.count,
+                for: viewModel.visibleItems.count,
                 tagBarHeight: Self.tagBarHeight(for: viewModel.tags)
             )
         )
@@ -114,6 +117,13 @@ struct ClipboardPanelView: View {
         .contentShape(Rectangle())
         .onPreferenceChange(WindowDragExclusionPreferenceKey.self) { exclusions in
             windowDragExclusions = exclusions
+        }
+        .onChange(of: viewModel.searchFocusRequest) { _, _ in
+            guard viewModel.mode == .list else { return }
+
+            DispatchQueue.main.async {
+                isSearchFieldFocused = true
+            }
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.panelCoordinateSpace))
@@ -276,12 +286,15 @@ struct ClipboardPanelView: View {
     private var listView: some View {
         VStack(spacing: 0) {
             header(title: "常用粘贴板", showsTagButton: true)
+            searchBar
 
             if viewModel.tags.count > 1 {
                 tagBar
             }
 
-            if viewModel.items.isEmpty {
+            if viewModel.visibleItems.isEmpty, viewModel.hasSearchQuery {
+                searchEmptyState
+            } else if viewModel.visibleItems.isEmpty {
                 emptyState
             } else {
                 listContent
@@ -289,6 +302,70 @@ struct ClipboardPanelView: View {
 
             footer
         }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(ClipboardTheme.mintDeep.opacity(0.72))
+
+                TextField("搜索文本", text: $viewModel.searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .focused($isSearchFieldFocused)
+                    .onSubmit {
+                        if viewModel.pasteSelectedItem() {
+                            onClose()
+                        }
+                    }
+
+                if viewModel.hasSearchQuery {
+                    Button {
+                        viewModel.clearSearch()
+                        isSearchFieldFocused = true
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("清空搜索")
+                }
+            }
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.white.opacity(0.54))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .stroke(ClipboardTheme.mint.opacity(0.20), lineWidth: 1)
+                    }
+            }
+
+            Picker("搜索范围", selection: $viewModel.searchScope) {
+                Text("当前标签").tag(ClipboardViewModel.SearchScope.currentTag)
+                Text("全部").tag(ClipboardViewModel.SearchScope.allTags)
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 142)
+            .help("选择搜索当前标签或全部标签")
+        }
+        .frame(height: Self.searchBarHeight)
+        .padding(.horizontal, 18)
+        .background {
+            Rectangle()
+                .fill(Color.white.opacity(0.26))
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(ClipboardTheme.mint.opacity(0.12))
+                        .frame(height: 1)
+                }
+        }
+        .excludedFromWindowDrag()
     }
 
     private var tagBar: some View {
@@ -441,12 +518,14 @@ struct ClipboardPanelView: View {
     private var listContent: some View {
         ScrollViewReader { scrollProxy in
             List {
-                ForEach(Array(viewModel.items.enumerated()), id: \.element.id) { index, item in
+                ForEach(Array(viewModel.visibleItems.enumerated()), id: \.element.id) { index, item in
                     ClipboardRow(
                         item: item,
                         index: index,
                         isSelected: viewModel.selectedItemID == item.id,
-                        preview: preview(for: item.text)
+                        preview: preview(for: item.text),
+                        tagName: viewModel.searchScope == .allTags ? viewModel.tagName(for: item) : nil,
+                        showsDragHandle: viewModel.canReorderVisibleItems
                     )
                     .id(item.id)
                     // 单击更新选中项，双击沿用回车的粘贴路径并关闭面板。
@@ -472,7 +551,7 @@ struct ClipboardPanelView: View {
                         delegate: ClipboardDropDelegate(
                             itemID: item.id,
                             draggedItemID: $draggedItemID,
-                            items: viewModel.items,
+                            items: viewModel.visibleItems,
                             moveItems: viewModel.moveItems
                         )
                     )
@@ -604,6 +683,8 @@ struct ClipboardPanelView: View {
 
             VStack(alignment: .leading, spacing: 7) {
                 usageHelpRow(shortcut: "⌥ 空格", description: "显示或隐藏面板")
+                usageHelpRow(shortcut: "直接输入", description: "搜索常用文本")
+                usageHelpRow(shortcut: "⌘ F", description: "聚焦搜索框")
                 usageHelpRow(shortcut: "单击", description: "选择常用文本")
                 usageHelpRow(shortcut: "双击 / ↩", description: "粘贴所选文本")
                 usageHelpRow(shortcut: "⌥ 1–9", description: "直接粘贴对应文本")
@@ -711,6 +792,36 @@ struct ClipboardPanelView: View {
                     .frame(height: 34)
             }
             .buttonStyle(.borderedProminent)
+            .excludedFromWindowDrag()
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minHeight: listAreaHeight)
+    }
+
+    private var searchEmptyState: some View {
+        VStack(spacing: 12) {
+            Spacer()
+
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(ClipboardTheme.mintDeep.opacity(0.72))
+
+            VStack(spacing: 5) {
+                Text("没有找到匹配文本")
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+
+                Text(viewModel.searchScope == .currentTag ? "可以换个关键词，或搜索全部标签" : "可以换个关键词再试试")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+
+            Button("清空搜索") {
+                viewModel.clearSearch()
+                viewModel.requestSearchFocus()
+            }
+            .buttonStyle(.bordered)
             .excludedFromWindowDrag()
 
             Spacer()
@@ -864,7 +975,9 @@ struct ClipboardPanelView: View {
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .lineLimit(1)
 
-                            Text("\(viewModel.items.count) 条文本")
+                            Text(viewModel.hasSearchQuery || viewModel.searchScope == .allTags
+                                ? "\(viewModel.visibleItems.count) 条结果"
+                                : "\(viewModel.items.count) 条文本")
                                 .font(.system(size: 10, weight: .medium, design: .rounded))
                                 .foregroundStyle(.tertiary)
                                 .lineLimit(1)
@@ -1321,10 +1434,12 @@ private struct ClipboardRow: View {
     let index: Int
     let isSelected: Bool
     let preview: String
+    let tagName: String?
+    let showsDragHandle: Bool
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "line.3.horizontal")
+            Image(systemName: showsDragHandle ? "line.3.horizontal" : "magnifyingglass")
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(
                     isSelected ? ClipboardTheme.mintDeep.opacity(0.68) : ClipboardTheme.ink.opacity(0.30)
@@ -1352,6 +1467,19 @@ private struct ClipboardRow: View {
                 .lineLimit(1)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let tagName {
+                Text(tagName)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(isSelected ? ClipboardTheme.mintDeep.opacity(0.78) : .secondary)
+                    .lineLimit(1)
+                    .padding(.horizontal, 7)
+                    .frame(height: 21)
+                    .background {
+                        Capsule()
+                            .fill(ClipboardTheme.mint.opacity(isSelected ? 0.15 : 0.09))
+                    }
+            }
         }
         .padding(.horizontal, 11)
         .frame(height: ClipboardPanelView.listRowHeight)

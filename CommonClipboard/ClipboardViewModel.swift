@@ -8,6 +8,13 @@ final class ClipboardViewModel: ObservableObject {
         case editor
     }
 
+    enum SearchScope: String, CaseIterable, Identifiable {
+        case currentTag
+        case allTags
+
+        var id: Self { self }
+    }
+
     @Published private(set) var tags: [PasteTag]
     @Published private(set) var items: [PasteItem]
     @Published var selectedTagID: UUID?
@@ -17,6 +24,17 @@ final class ClipboardViewModel: ObservableObject {
     @Published private(set) var editingItemID: UUID?
     @Published var isShowingPermission = false
     @Published var alertMessage: String?
+    @Published var searchText = "" {
+        didSet {
+            synchronizeSelectionWithVisibleItems()
+        }
+    }
+    @Published var searchScope: SearchScope = .currentTag {
+        didSet {
+            synchronizeSelectionWithVisibleItems()
+        }
+    }
+    @Published private(set) var searchFocusRequest = 0
 
     private let store: PasteItemStore
     private let pasteService: PasteService
@@ -40,15 +58,46 @@ final class ClipboardViewModel: ObservableObject {
         PasteItemStore.isValidText(draftText)
     }
 
+    var visibleItems: [PasteItem] {
+        let candidates: [PasteItem]
+        switch searchScope {
+        case .currentTag:
+            candidates = items
+        case .allTags:
+            candidates = store.items
+        }
+
+        let searchTerms = searchText
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+        guard !searchTerms.isEmpty else { return candidates }
+
+        return candidates.filter { item in
+            searchTerms.allSatisfy { term in
+                item.text.localizedStandardContains(term)
+            }
+        }
+    }
+
+    var hasSearchQuery: Bool {
+        !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var canReorderVisibleItems: Bool {
+        searchScope == .currentTag && !hasSearchQuery
+    }
+
     func prepareForPresentation(targetApplication: NSRunningApplication?) {
         self.targetApplication = targetApplication
         mode = .list
         editingItemID = nil
         draftText = ""
+        searchText = ""
+        searchScope = .currentTag
         isShowingPermission = false
         alertMessage = nil
         refreshFromStore()
-        selectedItemID = items.first?.id
+        selectedItemID = visibleItems.first?.id
     }
 
     func refreshFromStore() {
@@ -63,16 +112,18 @@ final class ClipboardViewModel: ObservableObject {
 
         items = selectedTagID.map(store.items(for:)) ?? []
 
-        if let selectedItemID, items.contains(where: { $0.id == selectedItemID }) {
+        if let selectedItemID, visibleItems.contains(where: { $0.id == selectedItemID }) {
             return
         }
-        self.selectedItemID = items.first?.id
+        self.selectedItemID = visibleItems.first?.id
     }
 
     func dismiss() {
         mode = .list
         editingItemID = nil
         draftText = ""
+        searchText = ""
+        searchScope = .currentTag
         isShowingPermission = false
         alertMessage = nil
         targetApplication = nil
@@ -104,9 +155,10 @@ final class ClipboardViewModel: ObservableObject {
     func selectTag(withID tagID: UUID) {
         guard tags.contains(where: { $0.id == tagID }) else { return }
 
+        searchScope = .currentTag
         selectedTagID = tagID
         items = store.items(for: tagID)
-        selectedItemID = items.first?.id
+        selectedItemID = visibleItems.first?.id
     }
 
     func moveTagSelection(by offset: Int) {
@@ -153,6 +205,22 @@ final class ClipboardViewModel: ObservableObject {
         tags = store.tags
     }
 
+    func requestSearchFocus() {
+        searchFocusRequest &+= 1
+    }
+
+    @discardableResult
+    func clearSearch() -> Bool {
+        guard hasSearchQuery else { return false }
+
+        searchText = ""
+        return true
+    }
+
+    func tagName(for item: PasteItem) -> String? {
+        tags.first(where: { $0.id == item.tagID })?.name
+    }
+
     func saveDraft() {
         guard canSaveDraft else { return }
 
@@ -183,6 +251,8 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     func moveItems(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        guard canReorderVisibleItems else { return }
+
         store.move(
             fromOffsets: offsets,
             toOffset: destination,
@@ -192,33 +262,36 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     func selectItem(at index: Int) {
-        guard items.indices.contains(index) else { return }
+        let visibleItems = self.visibleItems
+        guard visibleItems.indices.contains(index) else { return }
 
-        selectedItemID = items[index].id
+        selectedItemID = visibleItems[index].id
     }
 
     @discardableResult
     func pasteItem(at index: Int) -> Bool {
-        guard items.indices.contains(index) else { return false }
+        let visibleItems = self.visibleItems
+        guard visibleItems.indices.contains(index) else { return false }
 
-        selectedItemID = items[index].id
+        selectedItemID = visibleItems[index].id
         return pasteSelectedItem()
     }
 
     func moveSelection(by offset: Int) {
-        guard !items.isEmpty else {
+        let visibleItems = self.visibleItems
+        guard !visibleItems.isEmpty else {
             selectedItemID = nil
             return
         }
 
         guard let selectedItemID,
-              let currentIndex = items.firstIndex(where: { $0.id == selectedItemID }) else {
-            self.selectedItemID = items.first?.id
+              let currentIndex = visibleItems.firstIndex(where: { $0.id == selectedItemID }) else {
+            self.selectedItemID = visibleItems.first?.id
             return
         }
 
-        let nextIndex = wrappedIndex(from: currentIndex, offset: offset, count: items.count)
-        self.selectedItemID = items[nextIndex].id
+        let nextIndex = wrappedIndex(from: currentIndex, offset: offset, count: visibleItems.count)
+        self.selectedItemID = visibleItems[nextIndex].id
     }
 
     @discardableResult
@@ -244,7 +317,7 @@ final class ClipboardViewModel: ObservableObject {
     /// the item that was selected before the click.
     @discardableResult
     func pasteItem(withID itemID: UUID) -> Bool {
-        guard items.contains(where: { $0.id == itemID }) else { return false }
+        guard visibleItems.contains(where: { $0.id == itemID }) else { return false }
 
         selectedItemID = itemID
         return pasteSelectedItem()
@@ -273,7 +346,17 @@ final class ClipboardViewModel: ObservableObject {
 
     private var selectedItem: PasteItem? {
         guard let selectedItemID else { return nil }
-        return items.first(where: { $0.id == selectedItemID })
+        return visibleItems.first(where: { $0.id == selectedItemID })
+    }
+
+    private func synchronizeSelectionWithVisibleItems() {
+        let visibleItems = self.visibleItems
+        if let selectedItemID,
+           visibleItems.contains(where: { $0.id == selectedItemID }) {
+            return
+        }
+
+        selectedItemID = visibleItems.first?.id
     }
 
     private func wrappedIndex(from currentIndex: Int, offset: Int, count: Int) -> Int {
