@@ -236,6 +236,25 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(store.items(for: PasteTag.defaultID).map(\.text), ["默认文本"])
     }
 
+    func testRenamingTagKeepsSelectionAndUpdatesTagNames() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let workItem = try XCTUnwrap(store.add(text: "工作文本", to: workTag.id))
+        let service = MockPasteService()
+        let viewModel = ClipboardViewModel(store: store, pasteService: service)
+
+        viewModel.selectTag(withID: workTag.id)
+        XCTAssertTrue(viewModel.renameTag(id: workTag.id, name: "公司"))
+
+        XCTAssertEqual(viewModel.tags.map(\.name), ["默认", "公司"])
+        XCTAssertEqual(viewModel.selectedTagID, workTag.id)
+        XCTAssertEqual(viewModel.items.map(\.id), [workItem.id])
+        XCTAssertEqual(viewModel.tagName(for: workItem), "公司")
+
+        XCTAssertFalse(viewModel.renameTag(id: workTag.id, name: "默认"))
+        XCTAssertEqual(viewModel.tags.map(\.name), ["默认", "公司"])
+    }
+
     func testDeletingSelectedTagFallsBackToDefaultTag() throws {
         let store = PasteItemStore(fileURL: temporaryFileURL())
         let workTag = try XCTUnwrap(store.addTag(name: "工作"))

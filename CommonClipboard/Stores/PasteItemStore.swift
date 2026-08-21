@@ -71,15 +71,27 @@ final class PasteItemStore: ObservableObject {
     @discardableResult
     func addTag(name: String) -> PasteTag? {
         let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard Self.isValidTagName(normalizedName),
-              !tags.contains(where: { $0.name.caseInsensitiveCompare(normalizedName) == .orderedSame }) else {
-            return nil
-        }
+        guard isTagNameAvailable(normalizedName) else { return nil }
 
         let tag = PasteTag(name: normalizedName, order: tags.count)
         tags.append(tag)
         normalizeAndSave()
         return tag
+    }
+
+    /// Renames an existing tag. The tag ID stays stable, so items keep their
+    /// relationship and no reordering happens.
+    @discardableResult
+    func renameTag(id: UUID, name: String) -> Bool {
+        let normalizedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let index = tags.firstIndex(where: { $0.id == id }),
+              isTagNameAvailable(normalizedName, excluding: id) else {
+            return false
+        }
+
+        tags[index].name = normalizedName
+        normalizeAndSave()
+        return true
     }
 
     @discardableResult
@@ -226,8 +238,14 @@ final class PasteItemStore: ObservableObject {
         }
     }
 
-    private static func isValidTagName(_ name: String) -> Bool {
-        !name.isEmpty
+    /// A tag name must be non-empty and unique. `excluding` lets a rename keep
+    /// its own current name (including a pure letter-case change).
+    private func isTagNameAvailable(_ normalizedName: String, excluding id: UUID? = nil) -> Bool {
+        guard !normalizedName.isEmpty else { return false }
+
+        return !tags.contains { tag in
+            tag.id != id && tag.name.caseInsensitiveCompare(normalizedName) == .orderedSame
+        }
     }
 
     private static func defaultFileURL(fileManager: FileManager) -> URL {

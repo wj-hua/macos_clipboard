@@ -15,6 +15,8 @@ struct ClipboardPanelView: View {
     @State private var isAddTagAlertPresented = false
     @State private var newTagName = ""
     @State private var tagToDelete: PasteTag?
+    @State private var tagToRename: PasteTag?
+    @State private var renamedTagName = ""
     @State private var tagErrorMessage: String?
     @State private var isTextEditorComposing = false
     @State private var isUsageHelpPresented = false
@@ -204,7 +206,37 @@ struct ClipboardPanelView: View {
             Text("为常用文本创建一个分类标签。")
         }
         .alert(
-            "无法添加标签",
+            "重命名标签",
+            isPresented: Binding(
+                get: { tagToRename != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        tagToRename = nil
+                    }
+                }
+            )
+        ) {
+            TextField("标签名称", text: $renamedTagName)
+
+            Button("保存") {
+                let name = renamedTagName
+                let tagID = tagToRename?.id
+                tagToRename = nil
+                renamedTagName = ""
+                if let tagID, !viewModel.renameTag(id: tagID, name: name) {
+                    tagErrorMessage = "标签名称不能为空，且不能与现有标签重复。"
+                }
+            }
+
+            Button("取消", role: .cancel) {
+                tagToRename = nil
+                renamedTagName = ""
+            }
+        } message: {
+            Text("标签中的常用文本不会受影响。")
+        }
+        .alert(
+            "无法保存标签",
             isPresented: Binding(
                 get: { tagErrorMessage != nil },
                 set: { isPresented in
@@ -499,6 +531,10 @@ struct ClipboardPanelView: View {
         }
         .contentShape(Capsule())
         .contextMenu {
+            Button("重命名标签") {
+                beginRenamingTag(tag)
+            }
+
             if tag.isDefault {
                 Button("默认标签不可删除") {}
                     .disabled(true)
@@ -513,6 +549,11 @@ struct ClipboardPanelView: View {
     private func beginAddingTag() {
         newTagName = ""
         isAddTagAlertPresented = true
+    }
+
+    private func beginRenamingTag(_ tag: PasteTag) {
+        renamedTagName = tag.name
+        tagToRename = tag
     }
 
     private var listContent: some View {
@@ -727,6 +768,7 @@ struct ClipboardPanelView: View {
                 usageHelpRow(shortcut: "↩", description: "粘贴所选文本")
                 usageHelpRow(shortcut: "⌥ 1–9", description: "直接粘贴对应文本")
                 usageHelpRow(shortcut: "拖动", description: "调整文本或标签顺序")
+                usageHelpRow(shortcut: "右键标签", description: "重命名或删除标签")
             }
         }
         .padding(14)

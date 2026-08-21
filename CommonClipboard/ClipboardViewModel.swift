@@ -207,6 +207,14 @@ final class ClipboardViewModel: ObservableObject {
     }
 
     @discardableResult
+    func renameTag(id: UUID, name: String) -> Bool {
+        guard store.renameTag(id: id, name: name) else { return false }
+
+        tags = store.tags
+        return true
+    }
+
+    @discardableResult
     func deleteTag(id: UUID) -> Bool {
         guard store.deleteTag(id: id) else { return false }
 

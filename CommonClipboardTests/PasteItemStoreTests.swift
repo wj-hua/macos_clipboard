@@ -90,6 +90,27 @@ final class PasteItemStoreTests: XCTestCase {
         XCTAssertNil(store.addTag(name: " 工作 "))
     }
 
+    func testRenamingTagKeepsItemsAndRejectsInvalidNames() throws {
+        let fileURL = temporaryFileURL()
+        let store = PasteItemStore(fileURL: fileURL)
+
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let workItem = try XCTUnwrap(store.add(text: "工作文本", to: workTag.id))
+
+        XCTAssertFalse(store.renameTag(id: workTag.id, name: "   "))
+        XCTAssertFalse(store.renameTag(id: workTag.id, name: " 默认 "))
+        XCTAssertFalse(store.renameTag(id: UUID(), name: "不存在"))
+
+        // Renaming to its own name (or a different letter case) stays allowed.
+        XCTAssertTrue(store.renameTag(id: workTag.id, name: "工作"))
+        XCTAssertTrue(store.renameTag(id: workTag.id, name: " 公司 "))
+        XCTAssertTrue(store.renameTag(id: PasteTag.defaultID, name: "收件箱"))
+
+        let reloadedStore = PasteItemStore(fileURL: fileURL)
+        XCTAssertEqual(reloadedStore.tags.map(\.name), ["收件箱", "公司"])
+        XCTAssertEqual(reloadedStore.items(for: workTag.id).map(\.id), [workItem.id])
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("CommonClipboardTests", isDirectory: true)
