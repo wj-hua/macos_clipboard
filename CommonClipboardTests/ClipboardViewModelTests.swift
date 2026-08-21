@@ -132,6 +132,59 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertEqual(service.pasteCallCount, 1)
     }
 
+    func testCopyWorksWithoutAccessibilityPermissionOrTargetApplication() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let item = try XCTUnwrap(store.add(text: "无需权限的复制文本"))
+        let service = MockPasteService()
+        service.isTrusted = false
+        let viewModel = ClipboardViewModel(store: store, pasteService: service)
+        viewModel.selectedItemID = item.id
+
+        XCTAssertTrue(viewModel.copySelectedItem())
+        XCTAssertEqual(service.copiedTexts, [item.text])
+        XCTAssertEqual(service.pasteCallCount, 0)
+        XCTAssertFalse(viewModel.isShowingPermission)
+    }
+
+    func testCopyingItemByIDSelectsAndCopiesThatItem() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        _ = try XCTUnwrap(store.add(text: "第一条"))
+        let second = try XCTUnwrap(store.add(text: "第二条"))
+        let service = MockPasteService()
+        let viewModel = ClipboardViewModel(store: store, pasteService: service)
+
+        XCTAssertTrue(viewModel.copyItem(withID: second.id))
+        XCTAssertEqual(viewModel.selectedItemID, second.id)
+        XCTAssertEqual(service.copiedTexts, [second.text])
+    }
+
+    func testDoubleClickCopyPreferencePersistsAndCopies() throws {
+        let suiteName = "ClipboardViewModelTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let item = try XCTUnwrap(store.add(text: "双击复制"))
+        let service = MockPasteService()
+        let viewModel = ClipboardViewModel(
+            store: store,
+            pasteService: service,
+            userDefaults: defaults
+        )
+        viewModel.doubleClickAction = .copy
+
+        XCTAssertTrue(viewModel.performDoubleClickAction(on: item.id))
+        XCTAssertEqual(service.copiedTexts, [item.text])
+        XCTAssertEqual(service.pasteCallCount, 0)
+
+        let reloadedViewModel = ClipboardViewModel(
+            store: store,
+            pasteService: service,
+            userDefaults: defaults
+        )
+        XCTAssertEqual(reloadedViewModel.doubleClickAction, .copy)
+    }
+
     func testPastingItemByIDSelectsAndPastesThatItem() throws {
         let store = PasteItemStore(fileURL: temporaryFileURL())
         let first = try XCTUnwrap(store.add(text: "第一条"))
@@ -291,6 +344,7 @@ private final class MockPasteService: PasteService {
     var permissionRequestCount = 0
     var pasteCallCount = 0
     var pastedTexts: [String] = []
+    var copiedTexts: [String] = []
 
     func isAccessibilityTrusted() -> Bool {
         isTrusted
@@ -301,6 +355,11 @@ private final class MockPasteService: PasteService {
     }
 
     func openAccessibilitySettings() {}
+
+    func copy(text: String) -> Bool {
+        copiedTexts.append(text)
+        return true
+    }
 
     func paste(text: String, into application: NSRunningApplication) {
         pasteCallCount += 1

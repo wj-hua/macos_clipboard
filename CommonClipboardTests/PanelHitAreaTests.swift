@@ -235,5 +235,6 @@ private final class StubPasteService: PasteService {
     func isAccessibilityTrusted() -> Bool { true }
     func requestAccessibilityPermission() {}
     func openAccessibilitySettings() {}
+    func copy(text: String) -> Bool { true }
     func paste(text: String, into application: NSRunningApplication) {}
 }

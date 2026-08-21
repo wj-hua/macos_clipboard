@@ -485,6 +485,11 @@ final class PanelController: NSObject, NSWindowDelegate {
 
         guard viewModel.mode == .list else { return false }
 
+        if isCopyShortcut(event) {
+            _ = viewModel.copySelectedItem()
+            return true
+        }
+
         if handleListShortcut(event) {
             return true
         }
@@ -521,6 +526,17 @@ final class PanelController: NSObject, NSWindowDelegate {
         ])
         return modifiers == .command
             && event.charactersIgnoringModifiers?.lowercased() == "f"
+    }
+
+    private func isCopyShortcut(_ event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([
+            .command,
+            .option,
+            .control,
+            .shift
+        ])
+        return modifiers == .command
+            && event.charactersIgnoringModifiers?.lowercased() == "c"
     }
 
     private func handleScrollWheel(_ event: NSEvent) -> Bool {

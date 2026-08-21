@@ -7,6 +7,8 @@ protocol PasteService: AnyObject {
     func isAccessibilityTrusted() -> Bool
     func requestAccessibilityPermission()
     func openAccessibilitySettings()
+    @discardableResult
+    func copy(text: String) -> Bool
     func paste(text: String, into application: NSRunningApplication)
 }
 
@@ -126,6 +128,12 @@ final class SystemPasteService: PasteService {
             return
         }
         NSWorkspace.shared.open(url)
+    }
+
+    @discardableResult
+    func copy(text: String) -> Bool {
+        pasteboard.clearContents()
+        return pasteboard.setString(text, forType: .string)
     }
 
     func paste(text: String, into application: NSRunningApplication) {

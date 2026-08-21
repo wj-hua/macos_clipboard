@@ -3,6 +3,13 @@ import Combine
 import Foundation
 
 final class ClipboardViewModel: ObservableObject {
+    enum DoubleClickAction: String, CaseIterable, Identifiable {
+        case paste
+        case copy
+
+        var id: Self { self }
+    }
+
     enum Mode: Equatable {
         case list
         case editor
@@ -35,14 +42,28 @@ final class ClipboardViewModel: ObservableObject {
         }
     }
     @Published private(set) var searchFocusRequest = 0
+    @Published var doubleClickAction: DoubleClickAction {
+        didSet {
+            userDefaults.set(doubleClickAction.rawValue, forKey: Self.doubleClickActionDefaultsKey)
+        }
+    }
 
     private let store: PasteItemStore
     private let pasteService: PasteService
+    private let userDefaults: UserDefaults
     private var targetApplication: NSRunningApplication?
+    private static let doubleClickActionDefaultsKey = "doubleClickAction"
 
-    init(store: PasteItemStore, pasteService: PasteService) {
+    convenience init(store: PasteItemStore, pasteService: PasteService) {
+        self.init(store: store, pasteService: pasteService, userDefaults: .standard)
+    }
+
+    init(store: PasteItemStore, pasteService: PasteService, userDefaults: UserDefaults) {
         self.store = store
         self.pasteService = pasteService
+        self.userDefaults = userDefaults
+        self.doubleClickAction = userDefaults.string(forKey: Self.doubleClickActionDefaultsKey)
+            .flatMap(DoubleClickAction.init(rawValue:)) ?? .paste
         self.tags = store.tags
         let initialTagID = store.tags.first?.id ?? PasteTag.defaultID
         self.selectedTagID = initialTagID
@@ -312,9 +333,40 @@ final class ClipboardViewModel: ObservableObject {
         return true
     }
 
-    /// Selects the tapped item and sends it through the same paste path as Return.
-    /// Keeping selection and paste together prevents a double-click from pasting
-    /// the item that was selected before the click.
+    /// Copies the selected text to the system clipboard without activating a
+    /// target app or requiring Accessibility permission.
+    @discardableResult
+    func copySelectedItem() -> Bool {
+        guard let selectedItem else { return false }
+
+        guard pasteService.copy(text: selectedItem.text) else {
+            alertMessage = "无法将所选文本复制到系统剪贴板，请重试。"
+            return false
+        }
+        return true
+    }
+
+    @discardableResult
+    func copyItem(withID itemID: UUID) -> Bool {
+        guard visibleItems.contains(where: { $0.id == itemID }) else { return false }
+
+        selectedItemID = itemID
+        return copySelectedItem()
+    }
+
+    @discardableResult
+    func performDoubleClickAction(on itemID: UUID) -> Bool {
+        switch doubleClickAction {
+        case .paste:
+            return pasteItem(withID: itemID)
+        case .copy:
+            return copyItem(withID: itemID)
+        }
+    }
+
+    /// Selects an item and sends it through the same paste path as Return.
+    /// Keeping selection and paste together prevents an item shortcut from
+    /// pasting whichever item happened to be selected previously.
     @discardableResult
     func pasteItem(withID itemID: UUID) -> Bool {
         guard visibleItems.contains(where: { $0.id == itemID }) else { return false }

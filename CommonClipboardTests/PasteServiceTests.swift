@@ -134,6 +134,21 @@ final class SystemPasteServiceIntegrationTests: XCTestCase {
     }
 }
 
+final class SystemCopyServiceTests: XCTestCase {
+    func testCopyReplacesClipboardWithPlainText() {
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("CommonClipboardCopy-\(UUID().uuidString)"))
+        pasteboard.clearContents()
+        XCTAssertTrue(pasteboard.setString("原始内容", forType: .string))
+        let service = SystemPasteService(
+            pasteboard: pasteboard,
+            accessibilityTrustCheck: { false }
+        )
+
+        XCTAssertTrue(service.copy(text: "仅复制的文本"))
+        XCTAssertEqual(pasteboard.string(forType: .string), "仅复制的文本")
+    }
+}
+
 private final class PasteboardTestTextView: NSTextView {
     private let pasteboard: NSPasteboard
     private let onPaste: (String) -> Void

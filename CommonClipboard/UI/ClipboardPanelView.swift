@@ -172,7 +172,7 @@ struct ClipboardPanelView: View {
             Text("删除后无法从应用中恢复这条文本。")
         }
         .alert(
-            "无法粘贴",
+            "操作失败",
             isPresented: Binding(
                 get: { viewModel.alertMessage != nil },
                 set: { isPresented in
@@ -528,7 +528,7 @@ struct ClipboardPanelView: View {
                         showsDragHandle: viewModel.canReorderVisibleItems
                     )
                     .id(item.id)
-                    // 单击更新选中项，双击沿用回车的粘贴路径并关闭面板。
+                    // 单击更新选中项，双击执行用户选择的粘贴或复制操作。
                     // 与 List 的原生拖动手势并行识别，避免点击手势拦截排序。
                     .simultaneousGesture(
                         TapGesture().onEnded {
@@ -537,7 +537,7 @@ struct ClipboardPanelView: View {
                     )
                     .simultaneousGesture(
                         TapGesture(count: 2).onEnded {
-                            if viewModel.pasteItem(withID: item.id) {
+                            if viewModel.performDoubleClickAction(on: item.id) {
                                 onClose()
                             }
                         }
@@ -566,6 +566,12 @@ struct ClipboardPanelView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .contextMenu {
+                        Button("复制") {
+                            viewModel.copyItem(withID: item.id)
+                        }
+
+                        Divider()
+
                         Button("编辑") {
                             viewModel.selectedItemID = item.id
                             viewModel.beginEditingSelectedItem()
@@ -615,6 +621,33 @@ struct ClipboardPanelView: View {
             }
 
             Spacer(minLength: 8)
+
+            Menu {
+                Picker("双击操作", selection: $viewModel.doubleClickAction) {
+                    Text("自动粘贴").tag(ClipboardViewModel.DoubleClickAction.paste)
+                    Text("仅复制").tag(ClipboardViewModel.DoubleClickAction.copy)
+                }
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(ClipboardTheme.mintDeep)
+                    .frame(width: 36, height: 36)
+                    .background {
+                        Circle()
+                            .fill(ClipboardTheme.mint.opacity(0.12))
+                            .overlay {
+                                Circle()
+                                    .stroke(ClipboardTheme.mint.opacity(0.24), lineWidth: 1)
+                            }
+                    }
+                    .contentShape(Circle())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("设置双击时自动粘贴或仅复制")
+            .accessibilityLabel("双击操作设置")
+            .excludedFromWindowDrag()
 
             Button {
                 withAnimation(.easeOut(duration: 0.16)) {
@@ -686,7 +719,12 @@ struct ClipboardPanelView: View {
                 usageHelpRow(shortcut: "直接输入", description: "搜索常用文本")
                 usageHelpRow(shortcut: "⌘ F", description: "聚焦搜索框")
                 usageHelpRow(shortcut: "单击", description: "选择常用文本")
-                usageHelpRow(shortcut: "双击 / ↩", description: "粘贴所选文本")
+                usageHelpRow(shortcut: "⌘ C", description: "仅复制所选文本")
+                usageHelpRow(
+                    shortcut: "双击",
+                    description: viewModel.doubleClickAction == .paste ? "粘贴所选文本" : "仅复制所选文本"
+                )
+                usageHelpRow(shortcut: "↩", description: "粘贴所选文本")
                 usageHelpRow(shortcut: "⌥ 1–9", description: "直接粘贴对应文本")
                 usageHelpRow(shortcut: "拖动", description: "调整文本或标签顺序")
             }
