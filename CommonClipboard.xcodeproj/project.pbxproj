@@ -16,6 +16,14 @@
 		A10000000000000000000006 /* ClipboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* ClipboardViewModel.swift */; };
 		A10000000000000000000007 /* ClipboardPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* ClipboardPanelView.swift */; };
 		A10000000000000000000008 /* PanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* PanelController.swift */; };
+		A10000000000000000000016 /* ClipboardTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* ClipboardTheme.swift */; };
+		A10000000000000000000017 /* WindowDragExclusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* WindowDragExclusion.swift */; };
+		A10000000000000000000018 /* TagBarMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* TagBarMetrics.swift */; };
+		A10000000000000000000019 /* TagBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* TagBarView.swift */; };
+		A1000000000000000000001A /* ClipboardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001A /* ClipboardRow.swift */; };
+		A1000000000000000000001B /* ClipboardTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001B /* ClipboardTextEditor.swift */; };
+		A1000000000000000000001C /* AccessibilityPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001C /* AccessibilityPermissionView.swift */; };
+		A1000000000000000000001D /* UsageHelpBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000001D /* UsageHelpBubble.swift */; };
 		A10000000000000000000009 /* PasteItemStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* PasteItemStoreTests.swift */; };
 		A1000000000000000000000A /* ClipboardViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* ClipboardViewModelTests.swift */; };
 		A10000000000000000000010 /* PasteServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* PasteServiceTests.swift */; };
@@ -37,6 +45,14 @@
 		B10000000000000000000006 /* ClipboardViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardViewModel.swift; sourceTree = "<group>"; };
 		B10000000000000000000007 /* ClipboardPanelView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardPanelView.swift; sourceTree = "<group>"; };
 		B10000000000000000000008 /* PanelController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PanelController.swift; sourceTree = "<group>"; };
+		B10000000000000000000016 /* ClipboardTheme.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardTheme.swift; sourceTree = "<group>"; };
+		B10000000000000000000017 /* WindowDragExclusion.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WindowDragExclusion.swift; sourceTree = "<group>"; };
+		B10000000000000000000018 /* TagBarMetrics.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TagBarMetrics.swift; sourceTree = "<group>"; };
+		B10000000000000000000019 /* TagBarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TagBarView.swift; sourceTree = "<group>"; };
+		B1000000000000000000001A /* ClipboardRow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardRow.swift; sourceTree = "<group>"; };
+		B1000000000000000000001B /* ClipboardTextEditor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardTextEditor.swift; sourceTree = "<group>"; };
+		B1000000000000000000001C /* AccessibilityPermissionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AccessibilityPermissionView.swift; sourceTree = "<group>"; };
+		B1000000000000000000001D /* UsageHelpBubble.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UsageHelpBubble.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* PasteItemStoreTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteItemStoreTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000000A /* ClipboardViewModelTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClipboardViewModelTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000010 /* PasteServiceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PasteServiceTests.swift; sourceTree = "<group>"; };
@@ -124,6 +140,14 @@
 			children = (
 				B10000000000000000000007 /* ClipboardPanelView.swift */,
 				B10000000000000000000008 /* PanelController.swift */,
+				B10000000000000000000016 /* ClipboardTheme.swift */,
+				B10000000000000000000017 /* WindowDragExclusion.swift */,
+				B10000000000000000000018 /* TagBarMetrics.swift */,
+				B10000000000000000000019 /* TagBarView.swift */,
+				B1000000000000000000001A /* ClipboardRow.swift */,
+				B1000000000000000000001B /* ClipboardTextEditor.swift */,
+				B1000000000000000000001C /* AccessibilityPermissionView.swift */,
+				B1000000000000000000001D /* UsageHelpBubble.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -262,6 +286,14 @@
 				A10000000000000000000006 /* ClipboardViewModel.swift in Sources */,
 				A10000000000000000000007 /* ClipboardPanelView.swift in Sources */,
 				A10000000000000000000008 /* PanelController.swift in Sources */,
+				A10000000000000000000016 /* ClipboardTheme.swift in Sources */,
+				A10000000000000000000017 /* WindowDragExclusion.swift in Sources */,
+				A10000000000000000000018 /* TagBarMetrics.swift in Sources */,
+				A10000000000000000000019 /* TagBarView.swift in Sources */,
+				A1000000000000000000001A /* ClipboardRow.swift in Sources */,
+				A1000000000000000000001B /* ClipboardTextEditor.swift in Sources */,
+				A1000000000000000000001C /* AccessibilityPermissionView.swift in Sources */,
+				A1000000000000000000001D /* UsageHelpBubble.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
