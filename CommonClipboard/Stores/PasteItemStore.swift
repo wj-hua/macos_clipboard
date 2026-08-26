@@ -31,12 +31,31 @@ final class PasteItemStore: ObservableObject {
     }
 
     @discardableResult
-    func update(id: UUID, text: String) -> Bool {
+    func update(id: UUID, text: String, tagID: UUID? = nil) -> Bool {
         guard Self.isValidText(text), let index = items.firstIndex(where: { $0.id == id }) else {
             return false
         }
 
         items[index].text = text
+        if let tagID, tags.contains(where: { $0.id == tagID }), items[index].tagID != tagID {
+            items[index].tagID = tagID
+            items[index].order = items(for: tagID).count
+        }
+        normalizeAndSave()
+        return true
+    }
+
+    @discardableResult
+    func moveItem(withID id: UUID, toTagID tagID: UUID) -> Bool {
+        guard let index = items.firstIndex(where: { $0.id == id }),
+              tags.contains(where: { $0.id == tagID }) else {
+            return false
+        }
+
+        guard items[index].tagID != tagID else { return true }
+
+        items[index].tagID = tagID
+        items[index].order = items(for: tagID).count
         normalizeAndSave()
         return true
     }

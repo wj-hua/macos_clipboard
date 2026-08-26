@@ -350,6 +350,61 @@ final class ClipboardViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.clearSearch())
     }
 
+    func testMoveItemUpdatesItemsAndSelection() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let defaultItem1 = try XCTUnwrap(store.add(text: "默认第一条"))
+        let defaultItem2 = try XCTUnwrap(store.add(text: "默认第二条"))
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let viewModel = ClipboardViewModel(store: store, pasteService: MockPasteService())
+
+        viewModel.refreshFromStore()
+        viewModel.selectedItemID = defaultItem1.id
+
+        XCTAssertTrue(viewModel.moveItem(withID: defaultItem1.id, toTagID: workTag.id))
+
+        // In current tag (默认), defaultItem1 is gone, so items should only contain defaultItem2,
+        // and selectedItemID should switch to defaultItem2.
+        XCTAssertEqual(viewModel.items.map(\.id), [defaultItem2.id])
+        XCTAssertEqual(viewModel.selectedItemID, defaultItem2.id)
+
+        // Switching to workTag shows defaultItem1
+        viewModel.selectTag(withID: workTag.id)
+        XCTAssertEqual(viewModel.items.map(\.id), [defaultItem1.id])
+        XCTAssertEqual(viewModel.selectedItemID, defaultItem1.id)
+    }
+
+    func testDraftTagSelectionWhenAddingAndEditing() throws {
+        let store = PasteItemStore(fileURL: temporaryFileURL())
+        let defaultItem = try XCTUnwrap(store.add(text: "默认文本"))
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let workItem = try XCTUnwrap(store.add(text: "工作文本", to: workTag.id))
+        let viewModel = ClipboardViewModel(store: store, pasteService: MockPasteService())
+
+        // 1. When adding in current tag (defaultTag), draftTagID defaults to defaultTag.
+        viewModel.selectTag(withID: PasteTag.defaultID)
+        viewModel.beginAdding()
+        XCTAssertEqual(viewModel.draftTagID, PasteTag.defaultID)
+
+        // User can change draftTagID to workTag and save.
+        viewModel.draftText = "新建并选择工作标签"
+        viewModel.draftTagID = workTag.id
+        viewModel.saveDraft()
+
+        XCTAssertEqual(store.items(for: workTag.id).map(\.text), ["工作文本", "新建并选择工作标签"])
+        XCTAssertEqual(store.items(for: PasteTag.defaultID).map(\.text), ["默认文本"])
+
+        // 2. When editing an item, draftTagID starts as that item's tagID.
+        viewModel.beginEditing(item: workItem)
+        XCTAssertEqual(viewModel.draftTagID, workTag.id)
+
+        // User switches tag to default tag and saves.
+        viewModel.draftTagID = PasteTag.defaultID
+        viewModel.saveDraft()
+
+        XCTAssertEqual(store.items(for: workTag.id).map(\.text), ["新建并选择工作标签"])
+        XCTAssertEqual(store.items(for: PasteTag.defaultID).map(\.text), ["默认文本", "工作文本"])
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("CommonClipboardTests", isDirectory: true)

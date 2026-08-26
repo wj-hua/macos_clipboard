@@ -111,6 +111,58 @@ final class PasteItemStoreTests: XCTestCase {
         XCTAssertEqual(reloadedStore.items(for: workTag.id).map(\.id), [workItem.id])
     }
 
+    func testMoveItemToAnotherTag() throws {
+        let fileURL = temporaryFileURL()
+        let store = PasteItemStore(fileURL: fileURL)
+
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let personalTag = try XCTUnwrap(store.addTag(name: "个人"))
+        let item1 = try XCTUnwrap(store.add(text: "工作第一条", to: workTag.id))
+        let item2 = try XCTUnwrap(store.add(text: "工作第二条", to: workTag.id))
+        let personalItem = try XCTUnwrap(store.add(text: "个人第一条", to: personalTag.id))
+
+        XCTAssertTrue(store.moveItem(withID: item1.id, toTagID: personalTag.id))
+
+        // After moving item1 to personalTag, workTag should only have item2 (order 0),
+        // and personalTag should have personalItem (order 0) and item1 (order 1).
+        XCTAssertEqual(store.items(for: workTag.id).map(\.id), [item2.id])
+        XCTAssertEqual(store.items(for: workTag.id).map(\.order), [0])
+        XCTAssertEqual(store.items(for: personalTag.id).map(\.id), [personalItem.id, item1.id])
+        XCTAssertEqual(store.items(for: personalTag.id).map(\.order), [0, 1])
+
+        let reloadedStore = PasteItemStore(fileURL: fileURL)
+        XCTAssertEqual(reloadedStore.items(for: workTag.id).map(\.id), [item2.id])
+        XCTAssertEqual(reloadedStore.items(for: personalTag.id).map(\.id), [personalItem.id, item1.id])
+    }
+
+    func testUpdateItemTextAndTag() throws {
+        let fileURL = temporaryFileURL()
+        let store = PasteItemStore(fileURL: fileURL)
+
+        let workTag = try XCTUnwrap(store.addTag(name: "工作"))
+        let personalTag = try XCTUnwrap(store.addTag(name: "个人"))
+        let item = try XCTUnwrap(store.add(text: "原始工作文本", to: workTag.id))
+
+        XCTAssertTrue(store.update(id: item.id, text: "修改后的个人文本", tagID: personalTag.id))
+
+        XCTAssertEqual(store.items(for: workTag.id), [])
+        XCTAssertEqual(store.items(for: personalTag.id).map(\.text), ["修改后的个人文本"])
+        XCTAssertEqual(store.items(for: personalTag.id).map(\.tagID), [personalTag.id])
+
+        let reloadedStore = PasteItemStore(fileURL: fileURL)
+        XCTAssertEqual(reloadedStore.items(for: personalTag.id).map(\.text), ["修改后的个人文本"])
+    }
+
+    func testMoveItemToNonExistentTagFails() throws {
+        let fileURL = temporaryFileURL()
+        let store = PasteItemStore(fileURL: fileURL)
+        let item = try XCTUnwrap(store.add(text: "默认文本"))
+
+        XCTAssertFalse(store.moveItem(withID: item.id, toTagID: UUID()))
+        XCTAssertFalse(store.moveItem(withID: UUID(), toTagID: PasteTag.defaultID))
+        XCTAssertEqual(store.items(for: PasteTag.defaultID).map(\.id), [item.id])
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("CommonClipboardTests", isDirectory: true)

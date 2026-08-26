@@ -4,9 +4,11 @@ import SwiftUI
 struct TagBarView: View {
     @ObservedObject var viewModel: ClipboardViewModel
     @Binding var draggedTagID: UUID?
+    @Binding var draggedItemID: UUID?
     let onAddTag: () -> Void
     let onRenameTag: (PasteTag) -> Void
     let onDeleteTag: (PasteTag) -> Void
+    @State private var targetedTagID: UUID?
 
     var body: some View {
         // 单行横向滚动会把标签裁掉，而列表模式下滚轮已被面板用于切换选中项，
@@ -20,6 +22,7 @@ struct TagBarView: View {
                             TagChipView(
                                 tag: tag,
                                 isSelected: viewModel.selectedTagID == tag.id,
+                                isDropTarget: targetedTagID == tag.id,
                                 onSelect: {
                                     viewModel.selectTag(withID: tag.id)
                                 },
@@ -36,8 +39,13 @@ struct TagBarView: View {
                                 delegate: TagDropDelegate(
                                     tagID: tag.id,
                                     draggedTagID: $draggedTagID,
+                                    draggedItemID: $draggedItemID,
+                                    targetedTagID: $targetedTagID,
                                     tags: viewModel.tags,
-                                    moveTags: viewModel.moveTags
+                                    moveTags: viewModel.moveTags,
+                                    moveItemToTag: { itemID, tagID in
+                                        viewModel.moveItem(withID: itemID, toTagID: tagID)
+                                    }
                                 )
                             )
                         case .addButton:
@@ -100,6 +108,7 @@ struct TagBarView: View {
 struct TagChipView: View {
     let tag: PasteTag
     let isSelected: Bool
+    var isDropTarget: Bool = false
     let onSelect: () -> Void
     let onRename: () -> Void
     let onDelete: () -> Void
@@ -111,14 +120,18 @@ struct TagChipView: View {
                 onSelect()
             } label: {
                 HStack(spacing: TagBarMetrics.chipIconSpacing) {
-                    Image(systemName: TagBarMetrics.symbolName(for: tag))
+                    Image(systemName: isDropTarget ? "arrow.down.circle.fill" : TagBarMetrics.symbolName(for: tag))
                         .font(.system(size: TagBarMetrics.chipIconSize, weight: .semibold))
 
                     Text(tag.name)
                         .font(.system(size: TagBarMetrics.chipTextSize, weight: .semibold, design: .default))
                         .lineLimit(1)
                 }
-                .foregroundStyle(isSelected ? ClipboardTheme.accentDeep : ClipboardTheme.ink.opacity(0.80))
+                .foregroundStyle(
+                    isDropTarget
+                        ? ClipboardTheme.accentDeep
+                        : (isSelected ? ClipboardTheme.accentDeep : ClipboardTheme.ink.opacity(0.80))
+                )
                 .padding(.leading, TagBarMetrics.chipLeadingPadding)
                 .padding(.trailing, tag.isDefault ? TagBarMetrics.chipLeadingPadding : TagBarMetrics.chipTrailingPadding)
                 .frame(height: TagBarMetrics.chipHeight)
@@ -133,7 +146,11 @@ struct TagChipView: View {
 
             if !tag.isDefault {
                 Rectangle()
-                    .fill(isSelected ? ClipboardTheme.accent.opacity(0.25) : Color.black.opacity(0.08))
+                    .fill(
+                        isDropTarget
+                            ? ClipboardTheme.accent.opacity(0.35)
+                            : (isSelected ? ClipboardTheme.accent.opacity(0.25) : Color.black.opacity(0.08))
+                    )
                     .frame(width: TagBarMetrics.chipDividerWidth, height: 14)
 
                 Button {
@@ -145,56 +162,77 @@ struct TagChipView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(isSelected ? ClipboardTheme.accentDeep.opacity(0.80) : ClipboardTheme.inkTertiary)
+                .foregroundStyle(
+                    isDropTarget
+                        ? ClipboardTheme.accentDeep
+                        : (isSelected ? ClipboardTheme.accentDeep.opacity(0.80) : ClipboardTheme.inkTertiary)
+                )
                 .help("删除标签")
             }
         }
         .background {
             Capsule()
                 .fill(
-                    isSelected
+                    isDropTarget
                         ? AnyShapeStyle(
                             LinearGradient(
                                 colors: [
-                                    ClipboardTheme.accent.opacity(0.20),
-                                    ClipboardTheme.accent.opacity(0.10)
+                                    ClipboardTheme.accent.opacity(0.32),
+                                    ClipboardTheme.accent.opacity(0.18)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        : AnyShapeStyle(Color.white.opacity(0.55))
+                        : (isSelected
+                            ? AnyShapeStyle(
+                                LinearGradient(
+                                    colors: [
+                                        ClipboardTheme.accent.opacity(0.20),
+                                        ClipboardTheme.accent.opacity(0.10)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            : AnyShapeStyle(Color.white.opacity(0.55)))
                 )
                 .overlay {
                     Capsule()
                         .stroke(
-                            isSelected
-                                ? AnyShapeStyle(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white,
-                                            ClipboardTheme.accent.opacity(0.45)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
+                            isDropTarget
+                                ? AnyShapeStyle(ClipboardTheme.accent)
+                                : (isSelected
+                                    ? AnyShapeStyle(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.white,
+                                                ClipboardTheme.accent.opacity(0.45)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
                                     )
-                                )
-                                : AnyShapeStyle(
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.9), Color.black.opacity(0.06)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                ),
-                            lineWidth: 0.8
+                                    : AnyShapeStyle(
+                                        LinearGradient(
+                                            colors: [Color.white.opacity(0.9), Color.black.opacity(0.06)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )),
+                            lineWidth: isDropTarget ? 1.5 : 0.8
                         )
                 }
                 .shadow(
-                    color: isSelected ? ClipboardTheme.accent.opacity(0.12) : Color.black.opacity(0.02),
-                    radius: 2,
-                    y: 1
+                    color: isDropTarget
+                        ? ClipboardTheme.accent.opacity(0.35)
+                        : (isSelected ? ClipboardTheme.accent.opacity(0.12) : Color.black.opacity(0.02)),
+                    radius: isDropTarget ? 6 : 2,
+                    y: isDropTarget ? 2 : 1
                 )
         }
+        .scaleEffect(isDropTarget ? 1.05 : 1.0)
+        .animation(.snappy(duration: 0.18), value: isDropTarget)
         .contentShape(Capsule())
         .contextMenu {
             Button("重命名标签") {
@@ -216,10 +254,22 @@ struct TagChipView: View {
 struct TagDropDelegate: DropDelegate {
     let tagID: UUID
     @Binding var draggedTagID: UUID?
+    @Binding var draggedItemID: UUID?
+    @Binding var targetedTagID: UUID?
     let tags: [PasteTag]
     let moveTags: (IndexSet, Int) -> Void
+    let moveItemToTag: (UUID, UUID) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedItemID != nil || draggedTagID != nil || info.hasItemsConforming(to: [.text])
+    }
 
     func dropEntered(info: DropInfo) {
+        if draggedItemID != nil {
+            targetedTagID = tagID
+            return
+        }
+
         guard let draggedTagID,
               draggedTagID != tagID,
               let fromIndex = tags.firstIndex(where: { $0.id == draggedTagID }),
@@ -231,12 +281,42 @@ struct TagDropDelegate: DropDelegate {
         moveTags(IndexSet(integer: fromIndex), destination)
     }
 
+    func dropExited(info: DropInfo) {
+        if targetedTagID == tagID {
+            targetedTagID = nil
+        }
+    }
+
     func dropUpdated(info: DropInfo) -> DropProposal? {
         DropProposal(operation: .move)
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        draggedTagID = nil
-        return true
+        if let itemID = draggedItemID {
+            moveItemToTag(itemID, tagID)
+            draggedItemID = nil
+            targetedTagID = nil
+            return true
+        }
+
+        targetedTagID = nil
+        if draggedTagID != nil {
+            draggedTagID = nil
+            return true
+        }
+
+        let providers = info.itemProviders(for: [.text])
+        if let provider = providers.first {
+            _ = provider.loadObject(ofClass: NSString.self) { string, _ in
+                if let str = string as? String, let uuid = UUID(uuidString: str) {
+                    DispatchQueue.main.async {
+                        self.moveItemToTag(uuid, self.tagID)
+                    }
+                }
+            }
+            return true
+        }
+
+        return false
     }
 }

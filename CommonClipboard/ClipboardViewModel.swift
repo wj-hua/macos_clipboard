@@ -28,6 +28,7 @@ final class ClipboardViewModel: ObservableObject {
     @Published var selectedItemID: UUID?
     @Published private(set) var mode: Mode = .list
     @Published var draftText = ""
+    @Published var draftTagID: UUID = PasteTag.defaultID
     @Published private(set) var editingItemID: UUID?
     @Published var isShowingPermission = false
     @Published var alertMessage: String?
@@ -67,6 +68,7 @@ final class ClipboardViewModel: ObservableObject {
         self.tags = store.tags
         let initialTagID = store.tags.first?.id ?? PasteTag.defaultID
         self.selectedTagID = initialTagID
+        self.draftTagID = initialTagID
         self.items = store.items(for: initialTagID)
         self.selectedItemID = self.items.first?.id
     }
@@ -113,6 +115,7 @@ final class ClipboardViewModel: ObservableObject {
         mode = .list
         editingItemID = nil
         draftText = ""
+        draftTagID = selectedTagID ?? PasteTag.defaultID
         searchText = ""
         searchScope = .currentTag
         isShowingPermission = false
@@ -143,6 +146,7 @@ final class ClipboardViewModel: ObservableObject {
         mode = .list
         editingItemID = nil
         draftText = ""
+        draftTagID = selectedTagID ?? PasteTag.defaultID
         searchText = ""
         searchScope = .currentTag
         isShowingPermission = false
@@ -154,15 +158,21 @@ final class ClipboardViewModel: ObservableObject {
         mode = .editor
         editingItemID = nil
         draftText = ""
+        draftTagID = selectedTagID ?? PasteTag.defaultID
         alertMessage = nil
     }
 
     func beginEditingSelectedItem() {
         guard let selectedItem = selectedItem else { return }
+        beginEditing(item: selectedItem)
+    }
 
+    func beginEditing(item: PasteItem) {
         mode = .editor
-        editingItemID = selectedItem.id
-        draftText = selectedItem.text
+        editingItemID = item.id
+        draftText = item.text
+        draftTagID = item.tagID
+        selectedItemID = item.id
         alertMessage = nil
     }
 
@@ -170,6 +180,7 @@ final class ClipboardViewModel: ObservableObject {
         mode = .list
         editingItemID = nil
         draftText = ""
+        draftTagID = selectedTagID ?? PasteTag.defaultID
         alertMessage = nil
     }
 
@@ -254,9 +265,9 @@ final class ClipboardViewModel: ObservableObject {
         guard canSaveDraft else { return }
 
         if let editingItemID {
-            guard store.update(id: editingItemID, text: draftText) else { return }
+            guard store.update(id: editingItemID, text: draftText, tagID: draftTagID) else { return }
             selectedItemID = editingItemID
-        } else if let newItem = store.add(text: draftText, to: selectedTagID ?? PasteTag.defaultID) {
+        } else if let newItem = store.add(text: draftText, to: draftTagID) {
             selectedItemID = newItem.id
         } else {
             return
@@ -266,6 +277,13 @@ final class ClipboardViewModel: ObservableObject {
         mode = .list
         self.editingItemID = nil
         draftText = ""
+    }
+
+    @discardableResult
+    func moveItem(withID itemID: UUID, toTagID tagID: UUID) -> Bool {
+        guard store.moveItem(withID: itemID, toTagID: tagID) else { return false }
+        refreshFromStore()
+        return true
     }
 
     @discardableResult

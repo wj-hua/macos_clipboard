@@ -325,6 +325,7 @@ struct ClipboardPanelView: View {
                 TagBarView(
                     viewModel: viewModel,
                     draggedTagID: $draggedTagID,
+                    draggedItemID: $draggedItemID,
                     onAddTag: beginAddingTag,
                     onRenameTag: beginRenamingTag,
                     onDeleteTag: { tag in tagToDelete = tag }
@@ -537,9 +538,27 @@ struct ClipboardPanelView: View {
 
                         Divider()
 
+                        if viewModel.tags.count > 1 {
+                            Menu("移动到标签") {
+                                ForEach(viewModel.tags) { tag in
+                                    Button {
+                                        viewModel.moveItem(withID: item.id, toTagID: tag.id)
+                                    } label: {
+                                        if item.tagID == tag.id {
+                                            Label(tag.name, systemImage: "checkmark")
+                                        } else {
+                                            Text(tag.name)
+                                        }
+                                    }
+                                    .disabled(item.tagID == tag.id)
+                                }
+                            }
+
+                            Divider()
+                        }
+
                         Button("编辑") {
-                            viewModel.selectedItemID = item.id
-                            viewModel.beginEditingSelectedItem()
+                            viewModel.beginEditing(item: item)
                         }
                         Button("删除", role: .destructive) {
                             viewModel.selectedItemID = item.id
@@ -874,12 +893,53 @@ struct ClipboardPanelView: View {
             )
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack {
+                HStack(alignment: .center) {
                     Text("文本内容")
                         .font(.system(size: 12.5, weight: .bold, design: .default))
                         .foregroundStyle(ClipboardTheme.ink)
 
                     Spacer()
+
+                    if viewModel.tags.count > 1 {
+                        Menu {
+                            ForEach(viewModel.tags) { tag in
+                                Button {
+                                    viewModel.draftTagID = tag.id
+                                } label: {
+                                    if viewModel.draftTagID == tag.id {
+                                        Label(tag.name, systemImage: "checkmark")
+                                    } else {
+                                        Text(tag.name)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "tag.fill")
+                                    .font(.system(size: 9.5))
+                                Text(draftTagName)
+                                    .font(.system(size: 11.5, weight: .semibold, design: .default))
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 8, weight: .semibold))
+                                    .foregroundStyle(ClipboardTheme.accentDeep.opacity(0.7))
+                            }
+                            .foregroundStyle(ClipboardTheme.accentDeep)
+                            .padding(.horizontal, 8)
+                            .frame(height: 22)
+                            .background {
+                                Capsule()
+                                    .fill(ClipboardTheme.accent.opacity(0.12))
+                                    .overlay {
+                                        Capsule()
+                                            .stroke(ClipboardTheme.accent.opacity(0.22), lineWidth: 0.8)
+                                    }
+                            }
+                        }
+                        .menuStyle(.borderlessButton)
+                        .menuIndicator(.hidden)
+                        .fixedSize()
+                        .help("选择所属标签")
+                    }
 
                     Text("支持多行")
                         .font(.system(size: 11.5, weight: .medium, design: .default))
@@ -1212,5 +1272,9 @@ struct ClipboardPanelView: View {
         text
             .replacingOccurrences(of: "\n", with: "  ↵  ")
             .replacingOccurrences(of: "\r", with: "")
+    }
+
+    private var draftTagName: String {
+        viewModel.tags.first(where: { $0.id == viewModel.draftTagID })?.name ?? PasteTag.defaultName
     }
 }
